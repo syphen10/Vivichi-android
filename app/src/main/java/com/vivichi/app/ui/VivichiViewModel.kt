@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class UiEvent(
@@ -44,6 +45,10 @@ class VivichiViewModel(
             _state.value = loaded
             runDayCheck()
             _isReady.value = true
+            // Re-arm every enabled habit's alarm on each launch. AlarmManager alarms don't
+            // survive reboots or app force-stops, and previously they were only ever set when
+            // the user explicitly edited a habit — so reminders could silently stop forever.
+            scheduler?.rescheduleAll(_state.value)
             startTicker()
         }
     }
@@ -70,13 +75,23 @@ class VivichiViewModel(
         persist()
     }
 
+    /**
+     * Called from Activity.onResume, which fires *before* the initial disk load finishes.
+     * Reading/writing state here without waiting used to clobber the real saved data with the
+     * empty default AppState (wiping `notif`, habits, streak...) and persist that to disk —
+     * which is why reminders silently stopped and the missed-you overlay appeared late or not
+     * at all. Suspending until the load completes fixes both.
+     */
     fun checkMissedYou() {
-        val days = GameLogic.daysAwaySince(_state.value.lastSeen)
-        if (days != null && days >= 2 && _state.value.onboarded) {
-            _event.value = _event.value.copy(missedDays = days)
+        viewModelScope.launch {
+            isReady.first { it }
+            val days = GameLogic.daysAwaySince(_state.value.lastSeen)
+            if (days != null && days >= 2 && _state.value.onboarded) {
+                _event.value = _event.value.copy(missedDays = days)
+            }
+            _state.value = _state.value.copy(lastSeen = GameLogic.today())
+            persist()
         }
-        _state.value = _state.value.copy(lastSeen = GameLogic.today())
-        persist()
     }
 
     fun clearEvent() {
