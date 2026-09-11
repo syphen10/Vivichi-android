@@ -86,7 +86,7 @@ class VivichiViewModel(
         viewModelScope.launch {
             isReady.first { it }
             val days = GameLogic.daysAwaySince(_state.value.lastSeen)
-            if (days != null && days >= 2 && _state.value.onboarded) {
+            if (days != null && days >= 1 && _state.value.onboarded) {
                 _event.value = _event.value.copy(missedDays = days)
             }
             _state.value = _state.value.copy(lastSeen = GameLogic.today())
