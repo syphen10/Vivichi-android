@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Vivichi" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#FFF0F7</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.Vivichi.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FDF4E9</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.Vivichi</item>
+    </style>
+</resources>

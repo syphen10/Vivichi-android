@@ -1,0 +1,238 @@
+package com.vivichi.app.ui
+
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.vivichi.app.data.*
+import com.vivichi.app.domain.GameLogic
+import com.vivichi.app.domain.HabitAttemptResult
+import com.vivichi.app.notify.ReminderScheduler
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+data class UiEvent(
+    val xpToast: Pair<Int, String>? = null,
+    val leveledUpTo: Int? = null,
+    val diedEntry: CemeteryEntry? = null,
+    val missedDays: Int? = null,
+    val earlyConfirm: Pair<String, Int>? = null // habitId, minutesAhead
+)
+
+class VivichiViewModel(
+    private val repository: PetRepository,
+    private val scheduler: ReminderScheduler?
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(AppState())
+    val state: StateFlow<AppState> = _state.asStateFlow()
+
+    private val _event = MutableStateFlow(UiEvent())
+    val event: StateFlow<UiEvent> = _event.asStateFlow()
+
+    private val _isReady = MutableStateFlow(false)
+    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
+    val obStep = mutableStateOf(0)
+    val obSpeciesChoice = mutableStateOf("cat")
+
+    init {
+        viewModelScope.launch {
+            val loaded = repository.current()
+            _state.value = loaded
+            runDayCheck()
+            _isReady.value = true
+            startTicker()
+        }
+    }
+
+    private suspend fun startTicker() {
+        while (true) {
+            delay(60_000)
+            runDayCheck()
+            _state.value = GameLogic.refreshExpiry(_state.value)
+            persist()
+        }
+    }
+
+    private fun persist() {
+        viewModelScope.launch { repository.save(_state.value) }
+    }
+
+    private fun runDayCheck() {
+        val outcome = GameLogic.checkDayRollover(_state.value)
+        _state.value = outcome.state
+        if (outcome.died && outcome.cemeteryEntry != null) {
+            _event.value = _event.value.copy(diedEntry = outcome.cemeteryEntry)
+        }
+        persist()
+    }
+
+    fun checkMissedYou() {
+        val days = GameLogic.daysAwaySince(_state.value.lastSeen)
+        if (days != null && days >= 2 && _state.value.onboarded) {
+            _event.value = _event.value.copy(missedDays = days)
+        }
+        _state.value = _state.value.copy(lastSeen = GameLogic.today())
+        persist()
+    }
+
+    fun clearEvent() {
+        _event.value = UiEvent()
+    }
+
+    // Targeted clears — each overlay only nulls its own field, since multiple overlay
+    // states (e.g. an XP toast and a later early-confirm dialog) can be in flight at once
+    // and a blanket clearEvent() would wipe out an unrelated overlay still on screen.
+    fun clearXpToast() {
+        _event.value = _event.value.copy(xpToast = null)
+    }
+
+    fun clearLeveledUp() {
+        _event.value = _event.value.copy(leveledUpTo = null)
+    }
+
+    fun clearMissedDays() {
+        _event.value = _event.value.copy(missedDays = null)
+    }
+
+    fun clearEarlyConfirm() {
+        _event.value = _event.value.copy(earlyConfirm = null)
+    }
+
+    fun clearDied() {
+        _event.value = _event.value.copy(diedEntry = null)
+    }
+
+    fun finishTutorial() {
+        _state.value = _state.value.copy(tutorialSeen = true)
+        persist()
+    }
+
+    // ---------- Onboarding ----------
+
+    fun finishOnboarding(name: String, species: String, habitTimes: Map<String, String>, habitEnabled: Map<String, Boolean>, notifOptIn: Boolean) {
+        val habits = DefaultContent.defaultHabits.map { h ->
+            h.copy(time = habitTimes[h.id] ?: h.time, enabled = habitEnabled[h.id] ?: h.enabled)
+        }
+        _state.value = _state.value.copy(
+            onboarded = true,
+            notif = notifOptIn,
+            pet = Pet(name = name, species = species, bornAt = GameLogic.today()),
+            habits = habits,
+            lastSeen = GameLogic.today(),
+            todayLog = DayLog(GameLogic.today(), mutableMapOf(), mutableMapOf())
+        )
+        persist()
+        scheduler?.rescheduleAll(_state.value)
+    }
+
+    // ---------- Habits ----------
+
+    fun completeHabit(habitId: String, forceEarly: Boolean = false) {
+        val result: HabitAttemptResult = GameLogic.completeHabit(_state.value, habitId, forceEarly)
+        if (result.needsEarlyConfirm) {
+            _event.value = _event.value.copy(earlyConfirm = habitId to result.minutesAhead)
+            return
+        }
+        if (!result.applied) return
+        _state.value = result.state
+        val habit = _state.value.habits.find { it.id == habitId }
+        _event.value = _event.value.copy(
+            xpToast = result.xpGained to (habit?.intensity ?: "low"),
+            leveledUpTo = result.leveledUpTo
+        )
+        persist()
+    }
+
+    fun addOrUpdateHabit(id: String?, name: String, icon: String, xp: Int, time: String): Boolean {
+        val hm = time.split(":").map { it.toInt() }
+        val minsOfDay = hm[0] * 60 + hm[1]
+        val nowH = java.time.LocalTime.now()
+        val nowMins = nowH.hour * 60 + nowH.minute
+        if (id == null && nowMins > minsOfDay + 150) return false // caller should show "expired" confirm
+        val intensity = when (xp) { 3 -> "low"; 5 -> "medium"; else -> "high" }
+        val habits = _state.value.habits.toMutableList()
+        if (id != null) {
+            val idx = habits.indexOfFirst { it.id == id }
+            if (idx >= 0) habits[idx] = habits[idx].copy(name = name, icon = icon, xp = xp, intensity = intensity, time = time, enabled = true)
+        } else {
+            habits.add(Habit("c${System.currentTimeMillis()}", name, icon, xp, intensity, time, true, true))
+        }
+        _state.value = _state.value.copy(habits = habits)
+        persist()
+        scheduler?.rescheduleAll(_state.value)
+        return true
+    }
+
+    fun forceAddHabit(name: String, icon: String, xp: Int, time: String) {
+        val intensity = when (xp) { 3 -> "low"; 5 -> "medium"; else -> "high" }
+        val habits = _state.value.habits + Habit("c${System.currentTimeMillis()}", name, icon, xp, intensity, time, true, true)
+        _state.value = _state.value.copy(habits = habits)
+        persist()
+        scheduler?.rescheduleAll(_state.value)
+    }
+
+    fun toggleHabit(id: String, enabled: Boolean) {
+        _state.value = _state.value.copy(habits = _state.value.habits.map { if (it.id == id) it.copy(enabled = enabled) else it })
+        persist()
+        scheduler?.rescheduleAll(_state.value)
+    }
+
+    fun deleteHabit(id: String) {
+        _state.value = _state.value.copy(habits = _state.value.habits.filterNot { it.id == id })
+        persist()
+        scheduler?.rescheduleAll(_state.value)
+    }
+
+    fun saveHabitTimes(times: Map<String, String>) {
+        _state.value = _state.value.copy(habits = _state.value.habits.map { h -> times[h.id]?.let { h.copy(time = it) } ?: h })
+        persist()
+        scheduler?.rescheduleAll(_state.value)
+    }
+
+    // ---------- Style ----------
+
+    fun pickSpecies(species: String) {
+        _state.value = _state.value.copy(pet = _state.value.pet.copy(species = species))
+        persist()
+    }
+
+    fun pickOutfit(outfit: String) {
+        _state.value = _state.value.copy(pet = _state.value.pet.copy(outfit = outfit))
+        persist()
+    }
+
+    // ---------- Stats ----------
+
+    fun equipTitle(id: String) {
+        _state.value = _state.value.copy(activeTitle = id)
+        persist()
+    }
+
+    // ---------- Settings ----------
+
+    fun setNotif(enabled: Boolean) {
+        _state.value = _state.value.copy(notif = enabled)
+        persist()
+        if (enabled) scheduler?.rescheduleAll(_state.value) else scheduler?.cancelAll(_state.value)
+    }
+
+    fun resetAll() {
+        viewModelScope.launch {
+            repository.reset()
+            _state.value = AppState()
+            scheduler?.cancelAll(_state.value)
+        }
+    }
+
+    // ---------- Cemetery / Death ----------
+
+    fun afterDeath() {
+        _state.value = GameLogic.afterDeath(_state.value)
+        persist()
+        obStep.value = 0
+    }
+}
