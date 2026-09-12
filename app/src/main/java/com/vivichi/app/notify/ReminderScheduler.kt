@@ -13,6 +13,7 @@ import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.vivichi.app.R
 import com.vivichi.app.VivichiApplication
 import com.vivichi.app.data.AppState
 import com.vivichi.app.data.Habit
@@ -144,7 +145,8 @@ class ReminderScheduler(private val context: Context) {
             return
         }
         val notification = NotificationCompat.Builder(context, VivichiApplication.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFFE8607E.toInt())
             .setContentTitle("🔔 Test notification")
             .setContentText("If you can see this, notifications are working on this phone!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

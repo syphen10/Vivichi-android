@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.vivichi.app.MainActivity
+import com.vivichi.app.R
 import com.vivichi.app.VivichiApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,8 @@ class ReminderReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, VivichiApplication.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFFE8607E.toInt())
             .setContentTitle("$icon $name is ready!")
             .setContentText("Tap to complete it and keep your streak alive.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

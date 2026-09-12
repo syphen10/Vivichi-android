@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Status bar notification icon. Android masks these to a flat single colour using only the
+  alpha channel, so this is deliberately a pure-white silhouette with transparent cut-outs
+  (fillType="evenOdd" punches the eyes out) rather than the full-colour launcher icon.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+
+    <!-- ears -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4.2,2.8 L10.8,7.6 L5.4,11.2 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M19.8,2.8 L13.2,7.6 L18.6,11.2 Z" />
+
+    <!-- head with eyes punched out -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,7 a7,7 0 1,0 0,14 a7,7 0 1,0 0,-14 Z
+                          M8.4,12.1 a1.35,1.35 0 1,0 0,2.7 a1.35,1.35 0 1,0 0,-2.7 Z
+                          M15.6,12.1 a1.35,1.35 0 1,0 0,2.7 a1.35,1.35 0 1,0 0,-2.7 Z" />
+</vector>
