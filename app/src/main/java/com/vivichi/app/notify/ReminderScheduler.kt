@@ -138,6 +138,11 @@ class ReminderScheduler(private val context: Context) {
         return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
     }
 
+    /** Refreshes (or removes) the ongoing pet status panel in the notification shade. */
+    fun updateStatusPanel(state: AppState) {
+        if (state.statusPanel) StatusNotification.show(context, state) else StatusNotification.hide(context)
+    }
+
     /** Posts a notification right now, bypassing AlarmManager entirely — the fastest way to
      * check whether notifications actually work on this device, independent of any scheduling. */
     fun sendTestNotification() {

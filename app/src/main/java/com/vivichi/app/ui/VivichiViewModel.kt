@@ -64,6 +64,14 @@ class VivichiViewModel(
 
     private fun persist() {
         viewModelScope.launch { repository.save(_state.value) }
+        // Every state mutation funnels through here, so this is the one hook that keeps the
+        // shade panel (health, next habit, countdown) in step with the app.
+        scheduler?.updateStatusPanel(_state.value)
+    }
+
+    fun setStatusPanel(enabled: Boolean) {
+        _state.value = _state.value.copy(statusPanel = enabled)
+        persist()
     }
 
     private fun runDayCheck() {

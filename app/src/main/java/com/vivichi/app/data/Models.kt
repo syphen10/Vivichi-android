@@ -72,7 +72,8 @@ data class AppState(
     val cemetery: List<CemeteryEntry> = emptyList(),
     val lastSeen: String? = null,
     val achievements: Achievements = Achievements(),
-    val tutorialSeen: Boolean = false
+    val tutorialSeen: Boolean = false,
+    val statusPanel: Boolean = true
 )
 
 fun xpForLevel(level: Int): Int = level * 50

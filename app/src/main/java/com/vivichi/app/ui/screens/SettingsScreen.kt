@@ -251,6 +251,28 @@ fun SettingsScreen(viewModel: VivichiViewModel) {
             }
         }
         item {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 7.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .padding(13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Pet status panel", fontSize = 13.sp, fontWeight = FontWeight.Black)
+                    Text("Live panel in your notification shade with health and next habit", fontSize = 10.sp, color = SoftText, fontWeight = FontWeight.SemiBold)
+                }
+                Switch(
+                    checked = state.statusPanel,
+                    onCheckedChange = { SoundFx.click(); viewModel.setStatusPanel(it) },
+                    colors = SwitchDefaults.colors(checkedTrackColor = Pink)
+                )
+            }
+        }
+        item {
             SettingsRow(
                 title = "Send a test notification",
                 subtitle = "Fires immediately — the fastest way to check notifications actually work on this phone",
