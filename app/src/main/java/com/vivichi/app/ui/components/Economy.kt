@@ -169,7 +169,8 @@ fun BuyDialog(
     subtitle: String,
     onBuy: () -> Unit,
     onGetPremium: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    ad: AdOffer? = null
 ) {
     val affordable = coins >= price
     Dialog(onDismissRequest = onDismiss) {
@@ -192,13 +193,96 @@ fun BuyDialog(
                 VivichiButton(text = "Unlock", onClick = onBuy, modifier = Modifier.fillMaxWidth())
             } else {
                 Text(
-                    "You need ${price - coins} more coins. Earn them by completing habits${" or watching ads"}.",
+                    "You need ${price - coins} more coins. Earn them by completing habits${if (ad != null) " or watching ads" else ""}.",
                     fontSize = 12.sp, color = TextDark, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
+                if (ad != null) {
+                    WatchAdButton(ad, Modifier.fillMaxWidth().padding(bottom = 10.dp))
+                }
                 PremiumButton(isPremium = false, modifier = Modifier.align(Alignment.CenterHorizontally), onClick = onGetPremium)
             }
             TextButton(onClick = { SoundFx.click(); onDismiss() }) { Text("Not now", color = SoftText, fontWeight = FontWeight.Bold) }
+        }
+    }
+}
+
+/** Everything a "watch an ad" button needs. Null wherever ads don't apply (Premium users). */
+data class AdOffer(val adsLeft: Int, val ready: Boolean, val onWatch: () -> Unit)
+
+@Composable
+fun WatchAdButton(ad: AdOffer, modifier: Modifier = Modifier) {
+    val enabled = ad.adsLeft > 0 && ad.ready
+    val label = when {
+        ad.adsLeft <= 0 -> "Daily ad limit reached"
+        !ad.ready -> "Loading ad…"
+        else -> "Watch ad  +${com.vivichi.app.domain.GameLogic.COINS_PER_AD}"
+    }
+    Row(
+        modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (enabled) Brush.linearGradient(listOf(Color(0xFFFFC857), Color(0xFFFFA726))) else Brush.linearGradient(listOf(Color(0xFFEDE7F6), Color(0xFFEDE7F6))))
+            .clickable(enabled = enabled) { SoundFx.click(); ad.onWatch() }
+            .padding(horizontal = 18.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        EmojiGlyph(raw = "📺", size = 18.dp)
+        Text("  $label", fontSize = 15.sp, fontWeight = FontWeight.Black, color = if (enabled) Color.White else SoftText)
+        if (enabled) {
+            Spacer(Modifier.width(2.dp))
+            EmojiGlyph(raw = "🪙", size = 16.dp)
+        }
+    }
+}
+
+/** Opened from the coin chip: balance, the ad button, and every way to earn. */
+@Composable
+fun CoinsDialog(coins: Int, isPremium: Boolean, ad: AdOffer?, onGetPremium: () -> Unit, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.clip(RoundedCornerShape(26.dp)).background(Color.White).padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val spin = rememberInfiniteTransition(label = "coin")
+            val flip by spin.animateFloat(1f, -1f, infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "flip")
+            EmojiGlyph(raw = "🪙", size = 64.dp, modifier = Modifier.graphicsLayer { scaleX = flip })
+            val shown by animateIntAsState(coins, tween(700), label = "bal")
+            Text("$shown coins", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFFB7791F), modifier = Modifier.padding(top = 6.dp))
+            Text("Spend them on buddies and themes in Style", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+
+            Spacer(Modifier.height(16.dp))
+            if (ad != null) {
+                WatchAdButton(ad, Modifier.fillMaxWidth())
+                Text(
+                    "${ad.adsLeft} of ${com.vivichi.app.domain.GameLogic.MAX_ADS_PER_DAY} ads left today",
+                    fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp)
+                )
+                Spacer(Modifier.height(14.dp))
+            }
+
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(BgPink).padding(horizontal = 14.dp, vertical = 10.dp)) {
+                Text("Ways to earn", fontSize = 12.sp, fontWeight = FontWeight.Black, color = TextDark, modifier = Modifier.padding(bottom = 4.dp))
+                listOf(
+                    "✅" to "Easy habit" to "+5",
+                    "💪" to "Medium habit" to "+8",
+                    "🔥" to "Hard habit" to "+15",
+                    "🥳" to "Finish every habit today" to "+${com.vivichi.app.domain.GameLogic.COINS_ALL_DONE_BONUS}",
+                    "💎" to (if (isPremium) "Premium daily bonus (active)" else "Premium daily bonus") to "+${com.vivichi.app.domain.GameLogic.PREMIUM_DAILY_BONUS}"
+                ).forEach { (pair, amount) ->
+                    val (emoji, text) = pair
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        EmojiGlyph(raw = emoji, size = 16.dp)
+                        Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(start = 8.dp).weight(1f))
+                        Text(amount, fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFFB7791F))
+                    }
+                }
+            }
+            if (!isPremium) {
+                Spacer(Modifier.height(12.dp))
+                PremiumButton(isPremium = false, onClick = onGetPremium)
+            }
+            TextButton(onClick = { SoundFx.click(); onDismiss() }) { Text("Close", color = SoftText, fontWeight = FontWeight.Bold) }
         }
     }
 }

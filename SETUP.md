@@ -44,10 +44,26 @@ sdk.dir=C\:\\Users\\<you>\\AppData\\Local\\Android\\Sdk
 
 ## 3. Toolchain
 
-- **JDK 17** is required. Newer JDKs (21/25) crash the Kotlin 1.9.x compiler daemon.
-- Android SDK with `compileSdk 34` / `build-tools 34.0.0`.
+- **JDK 17** (point Gradle at it via `JAVA_HOME` before building).
+- Android SDK platform 36 (`compileSdk 36`).
+- Kotlin 2.3 / AGP 8.10. The Google Mobile Ads and Play Billing libraries are compiled with
+  Kotlin 2.3, so the project's Kotlin version can't drop below that.
 
-Point Gradle at JDK 17 via `JAVA_HOME` before building.
+## 3b. Ads & Premium configuration
+
+- **AdMob:** builds use Google's public *test* ad IDs until real ones are set. Once the AdMob app
+  and a *Rewarded* ad unit exist, add them to `gradle.properties`:
+
+  ```properties
+  vivichi.admobAppId=ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX
+  vivichi.rewardedUnitId=ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX
+  ```
+
+  Debug builds always keep test ads regardless (clicking your own live ads can get the AdMob
+  account suspended).
+- **Premium:** a one-time in-app product with ID `vivichi_premium` must exist (and be active) in
+  Play Console → Monetize → Products → In-app products. Purchases only work in builds installed
+  from Google Play (e.g. via a testing track), not sideloaded APKs.
 
 ## 4. Build
 

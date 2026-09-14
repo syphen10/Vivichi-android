@@ -46,7 +46,12 @@ private const val DONATE_LOCAL = 2
 private const val DONATE_INTL = 3
 
 @Composable
-fun SettingsScreen(viewModel: VivichiViewModel) {
+fun SettingsScreen(
+    viewModel: VivichiViewModel,
+    onOpenPremium: () -> Unit = {},
+    onRestorePremium: () -> Unit = {},
+    onAdPrivacy: (() -> Unit)? = null
+) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
@@ -313,6 +318,24 @@ fun SettingsScreen(viewModel: VivichiViewModel) {
                         openSettings(scheduler.batteryOptimizationIntent())
                     }
                 )
+            }
+        }
+
+        item { SettingsLabel("Premium & Ads") }
+        item {
+            SettingsRow(
+                title = if (state.premium) "Vivichi Premium" else "Go Premium",
+                subtitle = if (state.premium) "Active — thank you for supporting Vivichi!" else "All buddies, exclusive themes, daily coins, no ads",
+                trailing = if (state.premium) "💎" else null,
+                onClick = onOpenPremium
+            )
+        }
+        item {
+            SettingsRow(title = "Restore purchase", subtitle = "Bought Premium before? Get it back on this device", onClick = onRestorePremium)
+        }
+        if (onAdPrivacy != null) {
+            item {
+                SettingsRow(title = "Ad privacy choices", subtitle = "Review or change your ad consent", onClick = onAdPrivacy)
             }
         }
 

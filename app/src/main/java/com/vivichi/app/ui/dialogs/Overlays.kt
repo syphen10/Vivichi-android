@@ -160,9 +160,10 @@ fun BoxScope.XpToast(xp: Int, intensity: String, coins: Int = 0) {
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("+$xp XP · $label", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
+        // xp == 0 means a coin-only reward (e.g. a watched ad), so skip the XP half.
+        if (xp > 0) Text("+$xp XP · $label", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
         if (coins > 0) {
-            Text("  ·  +$coins ", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
+            Text(if (xp > 0) "  ·  +$coins " else "+$coins ", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
             EmojiGlyph(raw = "🪙", size = 20.dp)
         }
     }

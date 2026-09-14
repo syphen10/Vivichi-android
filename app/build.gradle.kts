@@ -4,6 +4,14 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    // Kotlin 2.x ships the Compose compiler as a plugin (replaces composeOptions).
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 val keystoreProps = Properties().apply {
@@ -19,9 +27,17 @@ android {
         applicationId = "com.vivichi.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.0"
+        versionCode = 5
+        versionName = "1.1.0"
         vectorDrawables.useSupportLibrary = true
+
+        // AdMob IDs live in gradle.properties so real ones can be swapped in without touching
+        // code. Defaults are Google's public test IDs, which always serve test ads.
+        val admobAppId = (project.findProperty("vivichi.admobAppId") as String?) ?: "ca-app-pub-3940256099942544~3347511713"
+        val rewardedUnit = (project.findProperty("vivichi.rewardedUnitId") as String?) ?: "ca-app-pub-3940256099942544/5224354917"
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("String", "REWARDED_UNIT_ID", "\"$rewardedUnit\"")
+        buildConfigField("String", "PREMIUM_PRODUCT_ID", "\"vivichi_premium\"")
     }
 
     signingConfigs {
@@ -45,6 +61,9 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            // Debug builds always use test ads, even once real IDs are configured — clicking
+            // your own live ads can get the AdMob account suspended.
+            buildConfigField("String", "REWARDED_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
         }
     }
 
@@ -52,15 +71,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        buildConfig = true
     }
 
     packaging {
@@ -89,8 +102,13 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    // Rewarded ads (+ Google's consent form for EEA/UK users) and the one-time Premium purchase.
+    implementation("com.google.android.gms:play-services-ads:25.4.0")
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
+    implementation("com.android.billingclient:billing:9.1.0")
 
 
     // Renders bundled Twemoji SVG assets (res/raw) for a consistent look across all devices,

@@ -56,7 +56,7 @@ private sealed class Pending {
 }
 
 @Composable
-fun StyleScreen(viewModel: VivichiViewModel, onOpenPremium: () -> Unit) {
+fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.components.AdOffer?, onOpenPremium: () -> Unit) {
     val state by viewModel.state.collectAsState()
     val season = currentSeason()
     val context = LocalContext.current
@@ -176,7 +176,8 @@ fun StyleScreen(viewModel: VivichiViewModel, onOpenPremium: () -> Unit) {
                 pending = null
             },
             onGetPremium = { pending = null; onOpenPremium() },
-            onDismiss = { pending = null }
+            onDismiss = { pending = null },
+            ad = adOffer
         )
         is Pending.Wearable -> BuyDialog(
             emoji = p.o.emoji,
@@ -189,7 +190,8 @@ fun StyleScreen(viewModel: VivichiViewModel, onOpenPremium: () -> Unit) {
                 pending = null
             },
             onGetPremium = { pending = null; onOpenPremium() },
-            onDismiss = { pending = null }
+            onDismiss = { pending = null },
+            ad = adOffer
         )
         null -> Unit
     }

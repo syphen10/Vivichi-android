@@ -21,20 +21,38 @@ import com.vivichi.app.ui.screens.*
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
 
+/** Hooks into the Activity-bound store pieces (Play Billing, rewarded ads). */
+data class StoreHooks(
+    val premiumPrice: String? = null,
+    val adReady: Boolean = false,
+    val onBuyPremium: () -> Unit = {},
+    val onRestorePremium: () -> Unit = {},
+    val onWatchAd: () -> Unit = {},
+    /** Non-null only where the user must be able to revisit ad consent (EEA/UK). */
+    val onAdPrivacy: (() -> Unit)? = null
+)
+
 enum class Tab(val label: String) {
     HOME("Home"), HABITS("Habits"), STATS("Stats"), STYLE("Style"),
     PLAY("Play"), CEMETERY("R.I.P"), SETTINGS("More")
 }
 
 @Composable
-fun VivichiApp(viewModel: VivichiViewModel) {
+fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
     val state by viewModel.state.collectAsState()
     val event by viewModel.event.collectAsState()
     var tab by remember { mutableStateOf(Tab.HOME) }
     var showPremium by remember { mutableStateOf(false) }
+    var showCoins by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val bgColor = seasonalBackground(state.pet.outfit)
+    // Premium means no ads anywhere, so the offer simply doesn't exist for them.
+    val adOffer = if (state.premium) null else com.vivichi.app.ui.components.AdOffer(
+        adsLeft = com.vivichi.app.domain.GameLogic.adsLeftToday(state),
+        ready = store.adReady,
+        onWatch = store.onWatchAd
+    )
 
     Box(Modifier.fillMaxSize().background(bgColor)) {
         if (!state.onboarded) {
@@ -48,7 +66,7 @@ fun VivichiApp(viewModel: VivichiViewModel) {
                     com.vivichi.app.ui.components.EconomyBar(
                         coins = state.coins,
                         isPremium = state.premium,
-                        onCoins = { tab = Tab.STYLE },
+                        onCoins = { showCoins = true },
                         onPremium = { showPremium = true }
                     )
                 },
@@ -66,10 +84,15 @@ fun VivichiApp(viewModel: VivichiViewModel) {
                             Tab.HOME -> HomeScreen(viewModel, onNavigateHabits = { tab = Tab.HABITS })
                             Tab.HABITS -> HabitsScreen(viewModel)
                             Tab.STATS -> StatsScreen(viewModel)
-                            Tab.STYLE -> StyleScreen(viewModel, onOpenPremium = { showPremium = true })
+                            Tab.STYLE -> StyleScreen(viewModel, adOffer = adOffer, onOpenPremium = { showPremium = true })
                             Tab.PLAY -> PlaygroundScreen(viewModel)
                             Tab.CEMETERY -> CemeteryScreen(viewModel)
-                            Tab.SETTINGS -> SettingsScreen(viewModel)
+                            Tab.SETTINGS -> SettingsScreen(
+                                viewModel,
+                                onOpenPremium = { showPremium = true },
+                                onRestorePremium = store.onRestorePremium,
+                                onAdPrivacy = if (state.premium) null else store.onAdPrivacy
+                            )
                         }
                     }
                 }
@@ -77,14 +100,19 @@ fun VivichiApp(viewModel: VivichiViewModel) {
             if (showPremium) {
                 com.vivichi.app.ui.components.PremiumDialog(
                     isPremium = state.premium,
-                    priceLabel = null,
-                    onBuy = {
-                        android.widget.Toast.makeText(context, "Premium purchases are coming very soon!", android.widget.Toast.LENGTH_SHORT).show()
-                    },
-                    onRestore = {
-                        android.widget.Toast.makeText(context, "Nothing to restore yet", android.widget.Toast.LENGTH_SHORT).show()
-                    },
+                    priceLabel = store.premiumPrice,
+                    onBuy = store.onBuyPremium,
+                    onRestore = store.onRestorePremium,
                     onDismiss = { showPremium = false }
+                )
+            }
+            if (showCoins) {
+                com.vivichi.app.ui.components.CoinsDialog(
+                    coins = state.coins,
+                    isPremium = state.premium,
+                    ad = adOffer,
+                    onGetPremium = { showCoins = false; showPremium = true },
+                    onDismiss = { showCoins = false }
                 )
             }
             if (event.mustPickPet && event.diedEntry == null) {

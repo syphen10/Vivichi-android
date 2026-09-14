@@ -103,6 +103,45 @@ class VivichiViewModel(
         }
     }
 
+    /**
+     * Applies Google Play's answer about Premium ownership. Waits for the saved state to load
+     * first — otherwise a fast billing reply could be overwritten by (or persist over) the load.
+     */
+    fun setPremium(owned: Boolean) {
+        viewModelScope.launch {
+            isReady.first { it }
+            val s = _state.value
+            if (s.premium == owned) return@launch
+            _state.value = s.copy(premium = owned)
+            if (owned) {
+                applyPremiumBonus()
+            } else {
+                // Refunded: take off anything Premium-only and re-check the pet.
+                val outfit = ALL_WEARABLES.find { it.id == s.pet.outfit }
+                if (outfit != null && !GameLogic.canWear(_state.value, outfit)) {
+                    _state.value = _state.value.copy(pet = _state.value.pet.copy(outfit = "default"))
+                }
+                checkOwnedPet()
+            }
+            persist()
+        }
+    }
+
+    /** Credits a fully watched rewarded ad. Returns false if today's limit is already used. */
+    fun rewardAdWatched(): Boolean {
+        val s = _state.value
+        if (GameLogic.adsLeftToday(s) <= 0) return false
+        val today = GameLogic.today()
+        _state.value = s.copy(
+            coins = s.coins + GameLogic.COINS_PER_AD,
+            adsDate = today,
+            adsWatchedToday = if (s.adsDate == today) s.adsWatchedToday + 1 else 1
+        )
+        _event.value = _event.value.copy(xpToast = Reward(0, "low", GameLogic.COINS_PER_AD))
+        persist()
+        return true
+    }
+
     fun setStatusPanel(enabled: Boolean) {
         _state.value = _state.value.copy(statusPanel = enabled)
         persist()
