@@ -3,8 +3,11 @@ package com.vivichi.app
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
+import android.graphics.Color
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -26,6 +29,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
+        // targetSdk 35+ forces edge-to-edge on Android 15+ anyway; enabling it explicitly makes
+        // older versions behave the same. Light style = dark status/nav icons over our pastel UI.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
         SoundFx.init(this)

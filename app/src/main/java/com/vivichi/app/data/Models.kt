@@ -76,4 +76,16 @@ data class AppState(
     val statusPanel: Boolean = true
 )
 
-fun xpForLevel(level: Int): Int = level * 50
+/**
+ * XP needed to clear [level]. Levels 1–5 are deliberately cheap so new players level up within
+ * their first days (default habits earn ~30 XP/day); from level 6 the original level × 50 curve
+ * applies.
+ */
+fun xpForLevel(level: Int): Int = when (level) {
+    1 -> 20
+    2 -> 35
+    3 -> 55
+    4 -> 75
+    5 -> 100
+    else -> level * 50
+}

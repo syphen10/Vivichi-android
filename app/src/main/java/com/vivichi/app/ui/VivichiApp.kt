@@ -1,6 +1,5 @@
 package com.vivichi.app.ui
 
-import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -9,8 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import com.vivichi.app.ui.components.CharacterView
 import com.vivichi.app.ui.dialogs.*
@@ -30,16 +27,6 @@ fun VivichiApp(viewModel: VivichiViewModel) {
     var tab by remember { mutableStateOf(Tab.HOME) }
 
     val bgColor = seasonalBackground(state.pet.outfit)
-    // Playground shows a colored gradient header right at the top of the screen; match the
-    // system status bar to it so there's no hard color seam between the two. Every other tab
-    // is a flat background, which already matches the status bar with no seam.
-    val statusBarColor = if (tab == Tab.PLAY) seasonalGradient(state.pet.outfit).first() else bgColor
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            (view.context as Activity).window.statusBarColor = statusBarColor.toArgb()
-        }
-    }
 
     Box(Modifier.fillMaxSize().background(bgColor)) {
         if (!state.onboarded) {
@@ -60,6 +47,18 @@ fun VivichiApp(viewModel: VivichiViewModel) {
                         Tab.SETTINGS -> SettingsScreen(viewModel)
                     }
                 }
+            }
+            // Edge-to-edge: the app draws behind the status bar, and window.statusBarColor is
+            // ignored from Android 15. The Playground header is a gradient, so paint the same
+            // gradient behind the status bar to avoid a seam. Drawn after the Scaffold, whose
+            // container background would otherwise cover it.
+            if (tab == Tab.PLAY) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                        .background(androidx.compose.ui.graphics.Brush.horizontalGradient(seasonalGradient(state.pet.outfit)))
+                )
             }
             if (!state.tutorialSeen) {
                 TutorialOverlay(onDone = { viewModel.finishTutorial() })

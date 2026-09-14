@@ -44,7 +44,9 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
             .background(Brush.verticalGradient(listOf(Color(0xFFFFE2EE), Color(0xFFEDE4FF), Color(0xFFE2F0FF)))),
         contentAlignment = Alignment.TopCenter
     ) {
-        Column(Modifier.fillMaxSize().padding(24.dp)) {
+        // safeDrawing = status bar + nav bar + cutout + keyboard, so content clears the system
+        // bars under edge-to-edge and the name field isn't hidden by the keyboard.
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)) {
             Spacer(Modifier.height(20.dp))
             Text(
                 "Vivichi",
