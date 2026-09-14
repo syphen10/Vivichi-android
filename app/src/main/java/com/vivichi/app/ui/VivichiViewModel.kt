@@ -69,6 +69,17 @@ class VivichiViewModel(
         scheduler?.updateStatusPanel(_state.value)
     }
 
+    /** Swaps in a whole state once the disk load has finished (used by the debug showcase profile). */
+    fun replaceState(newState: AppState) {
+        viewModelScope.launch {
+            isReady.first { it }
+            _state.value = newState
+            _event.value = UiEvent()
+            persist()
+            scheduler?.rescheduleAll(_state.value)
+        }
+    }
+
     fun setStatusPanel(enabled: Boolean) {
         _state.value = _state.value.copy(statusPanel = enabled)
         persist()

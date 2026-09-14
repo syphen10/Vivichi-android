@@ -70,11 +70,13 @@ fun StatsScreen(viewModel: VivichiViewModel) {
             Text("Last 7 Days", fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp, bottom = 10.dp))
         }
         item {
-            Row(Modifier.fillMaxWidth().height(72.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+            // Row must fit the tallest bar (4 + 58 = 62dp) plus spacer and day label (~16dp);
+            // at 72dp with 66dp bars the labels under full bars were pushed out and clipped.
+            Row(Modifier.fillMaxWidth().height(90.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
                 for (i in 6 downTo 0) {
                     val day = today.minusDays(i.toLong())
                     val pct = if (i == 0) GameLogic.completionPct(state) else (state.history.getOrNull(i - 1)?.pct ?: 0)
-                    val barHeight = (4 + (pct / 100f) * 62).dp
+                    val barHeight = (4 + (pct / 100f) * 58).dp
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                         Box(
                             Modifier

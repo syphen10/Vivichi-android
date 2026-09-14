@@ -13,7 +13,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import android.content.Intent
 import com.vivichi.app.notify.ReminderScheduler
+import com.vivichi.app.showcase.ShowcaseLoader
 import com.vivichi.app.ui.VivichiApp
 import com.vivichi.app.ui.ViewModelFactory
 import com.vivichi.app.ui.VivichiViewModel
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
         SoundFx.init(this)
+        ShowcaseLoader.maybeLoad(intent, viewModel)
 
         val notifLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -51,6 +54,11 @@ class MainActivity : ComponentActivity() {
                 VivichiApp(viewModel = viewModel)
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        ShowcaseLoader.maybeLoad(intent, viewModel)
     }
 
     override fun onResume() {
