@@ -19,7 +19,7 @@ android {
         applicationId = "com.vivichi.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
+        versionCode = 3
         versionName = "1.0.0"
         vectorDrawables.useSupportLibrary = true
     }
@@ -92,7 +92,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Renders bundled Twemoji SVG assets (res/raw) for a consistent look across all devices,
     // instead of relying on whatever emoji font each OEM/Android version happens to ship.

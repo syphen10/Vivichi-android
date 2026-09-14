@@ -1,6 +1,6 @@
 # Privacy Policy for Vivichi
 
-**Last updated:** September 12, 2026
+**Last updated:** September 14, 2026
 
 Vivichi ("the app") is developed by Syphen. This privacy policy explains how the app handles your information.
 
@@ -18,6 +18,8 @@ If you uninstall the app, this data is permanently deleted from your device.
 
 Vivichi uses Android's local notification and alarm system to remind you about your habits. These reminders are scheduled and triggered entirely on your device — no data about your habits or usage is sent anywhere to make this work.
 
+If you turn on the optional **pet status panel**, Vivichi shows an ongoing notification with your pet's name, health, and your next habit with a countdown. This is generated on your device from your locally stored data and is not sent anywhere. You can turn it off at any time in the app under More.
+
 ## Third-Party Services
 
 Vivichi does not integrate any third-party analytics, advertising, or tracking services.
@@ -25,11 +27,12 @@ Vivichi does not integrate any third-party analytics, advertising, or tracking s
 ## Permissions
 
 The app requests the following device permissions, used solely for their stated purpose:
-- **Notifications** — to show habit reminders.
-- **Alarms & reminders (exact alarms)** — to schedule habit reminders at the correct time.
-- **Boot completed** — to re-enable your scheduled reminders after your phone restarts.
+- **Notifications** — to show habit reminders and the optional pet status panel.
+- **Alarms & reminders (exact alarms)** — to schedule habit reminders at the correct time. You grant this in your phone's settings; without it, reminders still work but may arrive a little late.
+- **Run at startup (boot completed)** — to re-enable your scheduled reminders after your phone restarts.
+- **Ignore battery optimisations** — only requested if you tap the option in Settings, so that your phone's battery saver doesn't stop reminders from firing.
 
-None of these permissions are used to collect or transmit data.
+Vivichi does not request internet access. None of these permissions are used to collect or transmit data.
 
 ## Sharing Feature
 
