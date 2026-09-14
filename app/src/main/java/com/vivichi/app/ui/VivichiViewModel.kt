@@ -136,13 +136,14 @@ class VivichiViewModel(
 
     // ---------- Onboarding ----------
 
-    fun finishOnboarding(name: String, species: String, habitTimes: Map<String, String>, habitEnabled: Map<String, Boolean>, notifOptIn: Boolean) {
+    fun finishOnboarding(name: String, species: String, habitTimes: Map<String, String>, habitEnabled: Map<String, Boolean>, notifOptIn: Boolean, statusPanelOptIn: Boolean) {
         val habits = DefaultContent.defaultHabits.map { h ->
             h.copy(time = habitTimes[h.id] ?: h.time, enabled = habitEnabled[h.id] ?: h.enabled)
         }
         _state.value = _state.value.copy(
             onboarded = true,
             notif = notifOptIn,
+            statusPanel = statusPanelOptIn,
             pet = Pet(name = name, species = species, bornAt = GameLogic.today()),
             habits = habits,
             lastSeen = GameLogic.today(),

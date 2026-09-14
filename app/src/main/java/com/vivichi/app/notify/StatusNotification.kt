@@ -43,32 +43,14 @@ object StatusNotification {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
         val next = findNextUp(state)
-        val views = RemoteViews(context.packageName, R.layout.notification_status)
+        val backdrop = backdrop(state)
+        val face = petFaceBitmap(context, state)
+        val bar = healthBarBitmap(state.pet.health)
 
-        views.setImageViewBitmap(R.id.bg, backdrop(state))
-        petFaceBitmap(context, state)?.let { views.setImageViewBitmap(R.id.pet_face, it) }
-
-        views.setTextViewText(R.id.pet_name, state.pet.name)
-        views.setTextViewText(R.id.health_label, "${healthWord(state.pet.health)} · ${state.pet.health}%")
-
-        if (next != null) {
-            views.setTextViewText(R.id.next_label, "${next.habit.icon} ${next.habit.name}")
-            views.setTextViewText(R.id.timer_caption, next.caption)
-            // Chronometer counts down on its own, driven by the system — the panel stays live
-            // without the app running, and without us re-posting every second.
-            views.setChronometer(
-                R.id.timer,
-                SystemClock.elapsedRealtime() + (next.targetEpochMs - System.currentTimeMillis()),
-                null,
-                true
-            )
-            views.setChronometerCountDown(R.id.timer, true)
-        } else {
-            views.setTextViewText(R.id.next_label, "All done for today!")
-            views.setTextViewText(R.id.timer_caption, "")
-            views.setChronometer(R.id.timer, SystemClock.elapsedRealtime(), null, false)
-            views.setTextViewText(R.id.timer, "")
-        }
+        val big = RemoteViews(context.packageName, R.layout.notification_status)
+        populate(big, state, next, backdrop, face, bar, compact = false)
+        val small = RemoteViews(context.packageName, R.layout.notification_status_small)
+        populate(small, state, next, backdrop, face, bar, compact = true)
 
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -80,8 +62,8 @@ object StatusNotification {
         val notification = NotificationCompat.Builder(context, VivichiApplication.STATUS_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFFE8607E.toInt())
-            .setCustomContentView(views)
-            .setCustomBigContentView(views)
+            .setCustomContentView(small)
+            .setCustomBigContentView(big)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setOngoing(true)
             .setSilent(true)
@@ -98,6 +80,72 @@ object StatusNotification {
 
     fun hide(context: Context) {
         NotificationManagerCompat.from(context).cancel(STATUS_NOTIFICATION_ID)
+    }
+
+    /**
+     * Fills either layout. The compact one has no @id/timer_caption — setting a value on an id
+     * that isn't in the inflated layout throws when the shade renders it, so guard on [compact].
+     */
+    private fun populate(
+        views: RemoteViews,
+        state: AppState,
+        next: NextUp?,
+        backdrop: Bitmap,
+        face: Bitmap?,
+        bar: Bitmap,
+        compact: Boolean
+    ) {
+        views.setImageViewBitmap(R.id.bg, backdrop)
+        face?.let { views.setImageViewBitmap(R.id.pet_face, it) }
+        views.setImageViewBitmap(R.id.health_bar, bar)
+
+        views.setTextViewText(R.id.pet_name, state.pet.name)
+        views.setTextViewText(
+            R.id.health_label,
+            if (compact) "${state.pet.health}%" else "${healthWord(state.pet.health)} · ${state.pet.health}%"
+        )
+
+        if (next != null) {
+            views.setTextViewText(R.id.next_label, "${next.habit.icon} ${next.habit.name}")
+            if (!compact) views.setTextViewText(R.id.timer_caption, next.caption)
+            // Chronometer counts down on its own, driven by the system — the panel stays live
+            // without the app running, and without us re-posting every second.
+            views.setChronometer(
+                R.id.timer,
+                SystemClock.elapsedRealtime() + (next.targetEpochMs - System.currentTimeMillis()),
+                null,
+                true
+            )
+            views.setChronometerCountDown(R.id.timer, true)
+        } else {
+            views.setTextViewText(R.id.next_label, "All done for today!")
+            if (!compact) views.setTextViewText(R.id.timer_caption, "")
+            views.setChronometer(R.id.timer, SystemClock.elapsedRealtime(), null, false)
+            views.setTextViewText(R.id.timer, "")
+        }
+    }
+
+    /** Rounded track + fill, sized for fitXY into the 5–7dp tall bar views. */
+    private fun healthBarBitmap(health: Int): Bitmap {
+        val w = 400
+        val h = 28
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val r = h / 2f
+        c.drawRoundRect(
+            RectF(0f, 0f, w.toFloat(), h.toFloat()), r, r,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; alpha = 170 }
+        )
+        val pct = health.coerceIn(0, 100) / 100f
+        if (pct > 0f) {
+            // keep at least a full rounded cap visible so a near-empty bar still reads as a bar
+            val fillW = (w * pct).coerceAtLeast(h.toFloat())
+            c.drawRoundRect(
+                RectF(0f, 0f, fillW, h.toFloat()), r, r,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = healthColor(health) }
+            )
+        }
+        return bmp
     }
 
     private fun healthWord(health: Int): String = when {
@@ -177,9 +225,10 @@ object StatusNotification {
     }
 
     /**
-     * Seasonal backdrop plus the health bar, baked into one bitmap. The blur is done by drawing
-     * at 1/12 scale and upscaling with bilinear filtering — cheap, and avoids RenderScript
-     * (removed) or RenderEffect (API 31+ only, and View-bound rather than Bitmap-bound).
+     * Seasonal blurred backdrop. The blur is done by drawing at 1/12 scale and upscaling with
+     * bilinear filtering — cheap, and avoids RenderScript (removed) or RenderEffect (API 31+
+     * only, and View-bound rather than Bitmap-bound). Nothing positional is drawn here: the
+     * bitmap is scaled to the shade's size, so fixed-coordinate content would collide with text.
      */
     private fun backdrop(state: AppState): Bitmap {
         val w = 720
@@ -202,25 +251,6 @@ object StatusNotification {
 
         val out = Bitmap.createScaledBitmap(small, w, h, true)
         small.recycle()
-
-        // health bar, drawn sharp on top of the blurred backdrop
-        val bar = Canvas(out)
-        val left = 96f
-        val right = w - 250f
-        val barTop = h * 0.60f
-        val barH = 13f
-        val radius = barH / 2f
-        bar.drawRoundRect(
-            RectF(left, barTop, right, barTop + barH), radius, radius,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; alpha = 150 }
-        )
-        val pct = (state.pet.health.coerceIn(0, 100)) / 100f
-        if (pct > 0f) {
-            bar.drawRoundRect(
-                RectF(left, barTop, left + (right - left) * pct, barTop + barH), radius, radius,
-                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = healthColor(state.pet.health) }
-            )
-        }
         return out
     }
 

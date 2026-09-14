@@ -204,6 +204,7 @@ fun HabitCard(
     habit: com.vivichi.app.data.Habit,
     status: HabitStatus,
     modifier: Modifier = Modifier,
+    onEdit: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val done = status == HabitStatus.DONE
@@ -248,6 +249,9 @@ fun HabitCard(
             expired -> Box(
                 Modifier.clip(RoundedCornerShape(7.dp)).background(Red.copy(alpha = 0.1f)).padding(horizontal = 7.dp, vertical = 2.dp)
             ) { Text("⏰ Expired", fontSize = 10.sp, color = Red, fontWeight = FontWeight.Black) }
+            // With an edit action the pencil takes this slot itself; the empty "to do" circle is
+            // only a decoration and doubling them up made the row look cluttered and misaligned.
+            onEdit != null -> Unit
             else -> Box(
                 Modifier
                     .size(27.dp)
@@ -255,6 +259,16 @@ fun HabitCard(
                     .background(Color.White)
                     .border(2.5.dp, BorderPink, CircleShape)
             )
+        }
+        if (onEdit != null) {
+            Box(
+                Modifier
+                    .padding(start = if (done || expired) 6.dp else 0.dp)
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .clickable { SoundFx.click(); onEdit() },
+                contentAlignment = Alignment.Center
+            ) { EmojiGlyph(raw = "✏️", size = 17.dp) }
         }
     }
 }

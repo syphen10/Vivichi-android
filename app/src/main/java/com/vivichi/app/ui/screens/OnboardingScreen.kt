@@ -36,6 +36,7 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
     var species by remember { mutableStateOf("cat") }
     val times = remember { mutableStateMapOf<String, String>().apply { DefaultContent.defaultHabits.forEach { put(it.id, it.time) } } }
     val enabled = remember { mutableStateMapOf<String, Boolean>().apply { DefaultContent.defaultHabits.forEach { put(it.id, it.enabled) } } }
+    var notifChoice by remember { mutableStateOf(true) }
 
     Box(
         Modifier
@@ -63,7 +64,7 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
             )
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                repeat(4) { i ->
+                repeat(5) { i ->
                     Box(
                         Modifier
                             .padding(3.dp)
@@ -86,12 +87,18 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
                         0 -> StepName(petName, { petName = it }) { if (petName.isNotBlank()) step = 1 }
                         1 -> StepSpecies(species, { species = it }) { step = 2 }
                         2 -> StepSchedule(times, enabled) { step = 3 }
-                        else -> StepNotify(
+                        3 -> StepNotify(
+                            onEnable = { notifChoice = true; step = 4 },
+                            onSkip = { notifChoice = false; step = 4 }
+                        )
+                        else -> StepStatusPanel(
+                            petName = petName.trim(),
+                            species = species,
                             onEnable = {
-                                viewModel.finishOnboarding(petName.trim(), species, times, enabled, notifOptIn = true)
+                                viewModel.finishOnboarding(petName.trim(), species, times, enabled, notifOptIn = notifChoice, statusPanelOptIn = true)
                             },
                             onSkip = {
-                                viewModel.finishOnboarding(petName.trim(), species, times, enabled, notifOptIn = false)
+                                viewModel.finishOnboarding(petName.trim(), species, times, enabled, notifOptIn = notifChoice, statusPanelOptIn = false)
                             }
                         )
                     }
@@ -199,4 +206,52 @@ private fun StepNotify(onEnable: () -> Unit, onSkip: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         shape = RoundedCornerShape(18.dp)
     ) { Text("Maybe later", color = SoftText, fontWeight = FontWeight.Bold) }
+}
+
+@Composable
+private fun StepStatusPanel(petName: String, species: String, onEnable: () -> Unit, onSkip: () -> Unit) {
+    Text("Keep ${petName.ifBlank { "your buddy" }} close", fontSize = 19.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+    Text(
+        "Show a live panel in your notification shade with your pet's health and a countdown to your next habit. You can turn it off anytime in More.",
+        fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = 17.sp,
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 16.dp)
+    )
+
+    // Static preview mirroring the real notification layout, so the choice isn't abstract.
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFFFFE6F0), Color(0xFFEADEFF))))
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        EmojiGlyph(raw = PETS.find { it.id == species }?.emoji ?: "🐱", size = 44.dp)
+        Column(Modifier.weight(1f).padding(start = 10.dp, end = 8.dp)) {
+            Text(petName.ifBlank { "Your buddy" }, fontSize = 13.sp, fontWeight = FontWeight.Black, color = TextDark, maxLines = 1)
+            Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.7f))
+                ) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(0.86f).background(GreenDark, RoundedCornerShape(6.dp)))
+                }
+                Text("86%", fontSize = 10.sp, fontWeight = FontWeight.Black, color = SoftText, modifier = Modifier.padding(start = 6.dp))
+            }
+            Row(Modifier.padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                EmojiGlyph(raw = "💧", size = 12.dp)
+                Text(" Drink Water", fontSize = 11.sp, color = TextDark, maxLines = 1)
+            }
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text("28:12", fontSize = 16.sp, fontWeight = FontWeight.Black, color = PinkDark)
+            Text("left to do", fontSize = 9.sp, color = SoftText)
+        }
+    }
+
+    VivichiButton(text = "Yes, show it!", onClick = onEnable, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+    OutlinedButton(
+        onClick = { SoundFx.click(); onSkip() },
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) { Text("No thanks", color = SoftText, fontWeight = FontWeight.Bold) }
 }

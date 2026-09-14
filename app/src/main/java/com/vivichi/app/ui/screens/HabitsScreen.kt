@@ -171,10 +171,11 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun HabitRowWithActions(habit: Habit, status: HabitStatus, onComplete: () -> Unit, onEdit: () -> Unit) {
-    Box(Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp)) {
-        com.vivichi.app.ui.screens.HabitCard(habit = habit, status = status, onClick = onComplete)
-        TextButton(onClick = { SoundFx.click(); onEdit() }, modifier = Modifier.align(Alignment.TopEnd)) {
-            EmojiGlyph(raw = "✏️", size = 13.dp)
-        }
-    }
+    HabitCard(
+        habit = habit,
+        status = status,
+        modifier = Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp),
+        onEdit = onEdit,
+        onClick = onComplete
+    )
 }

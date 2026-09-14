@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Custom RemoteViews layout for the ongoing pet status panel in the notification shade.
-  RemoteViews only supports a fixed set of views (no Compose), so this is plain FrameLayout /
-  LinearLayout / ImageView / TextView / Chronometer. The seasonal blurred backdrop and the
-  health bar are drawn into a single bitmap at runtime and set on @id/bg, which sidesteps
-  RemoteViews' inability to dynamically tint or resize child views.
+  Expanded pet status panel. RemoteViews only supports a fixed set of views (no Compose), so this
+  is plain FrameLayout / LinearLayout / ImageView / TextView / Chronometer.
+
+  The health bar is its own ImageView inside the text column, not painted onto the backdrop:
+  the backdrop is scaled to whatever size the shade gives it, so anything drawn on it at fixed
+  coordinates ends up colliding with the independently laid-out text.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="92dp">
+    android:layout_height="96dp">
 
     <ImageView
         android:id="@+id/bg"
@@ -27,8 +28,8 @@
 
         <ImageView
             android:id="@+id/pet_face"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
             android:contentDescription="@null" />
 
         <LinearLayout
@@ -36,35 +37,52 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="12dp">
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="10dp">
 
             <TextView
                 android:id="@+id/pet_name"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="#3D2E4E"
-                android:textSize="14sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
-            <TextView
-                android:id="@+id/health_label"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="#6B5B7B"
-                android:textSize="11sp"
-                android:layout_marginTop="1dp"
-                android:maxLines="1" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="5dp">
+
+                <ImageView
+                    android:id="@+id/health_bar"
+                    android:layout_width="0dp"
+                    android:layout_height="7dp"
+                    android:layout_weight="1"
+                    android:scaleType="fitXY"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:id="@+id/health_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="#6B5B7B"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:maxLines="1" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/next_label"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:textColor="#3D2E4E"
                 android:textSize="12sp"
-                android:textStyle="bold"
-                android:layout_marginTop="5dp"
                 android:maxLines="1"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -73,15 +91,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:layout_marginStart="8dp">
+            android:gravity="end">
 
             <Chronometer
                 android:id="@+id/timer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#E8607E"
-                android:textSize="17sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <TextView
