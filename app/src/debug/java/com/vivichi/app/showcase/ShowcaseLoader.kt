@@ -65,7 +65,10 @@ object ShowcaseLoader {
             lastSeen = today.toString(),
             achievements = Achievements(earlyBird = true),
             tutorialSeen = true,
-            statusPanel = true
+            statusPanel = true,
+            coins = 240,
+            ownedSpecies = listOf("fox"),
+            ownedWearables = listOf("ocean")
         )
     }
 }

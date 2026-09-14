@@ -14,23 +14,52 @@ object DefaultContent {
     )
 }
 
-data class PetSpecies(val id: String, val name: String, val emoji: String)
+enum class Rarity(val label: String) { FREE("Free"), COMMON("Common"), RARE("Rare"), LEGENDARY("Legendary") }
+
+/** [price] in coins; 0 means free for everyone. Premium owners get every species regardless. */
+data class PetSpecies(val id: String, val name: String, val emoji: String, val price: Int, val rarity: Rarity)
 
 val PETS = listOf(
-    PetSpecies("cat", "Kitty", "🐱"),
-    PetSpecies("bunny", "BunBun", "🐰"),
-    PetSpecies("fox", "Foxy", "🦊"),
-    PetSpecies("panda", "Panda", "🐼"),
-    PetSpecies("peng", "Pengu", "🐧"),
-    PetSpecies("bear", "Ted", "🐻"),
-    PetSpecies("dragon", "Dragon", "🐉"),
-    PetSpecies("dog", "Doggo", "🐶")
+    PetSpecies("cat", "Kitty", "🐱", 0, Rarity.FREE),
+    PetSpecies("dog", "Doggo", "🐶", 0, Rarity.FREE),
+    PetSpecies("bunny", "BunBun", "🐰", 0, Rarity.FREE),
+    PetSpecies("panda", "Panda", "🐼", 0, Rarity.FREE),
+
+    PetSpecies("fox", "Foxy", "🦊", 150, Rarity.COMMON),
+    PetSpecies("peng", "Pengu", "🐧", 150, Rarity.COMMON),
+    PetSpecies("bear", "Ted", "🐻", 150, Rarity.COMMON),
+    PetSpecies("hamster", "Nibbles", "🐹", 150, Rarity.COMMON),
+    PetSpecies("frog", "Ribbit", "🐸", 150, Rarity.COMMON),
+
+    PetSpecies("lion", "Leo", "🦁", 300, Rarity.RARE),
+    PetSpecies("tiger", "Stripes", "🐯", 300, Rarity.RARE),
+    PetSpecies("koala", "Koko", "🐨", 300, Rarity.RARE),
+    PetSpecies("owl", "Hoot", "🦉", 300, Rarity.RARE),
+    PetSpecies("otter", "Otto", "🦦", 300, Rarity.RARE),
+
+    PetSpecies("dragon", "Dragon", "🐉", 600, Rarity.LEGENDARY),
+    PetSpecies("unicorn", "Sparkle", "🦄", 600, Rarity.LEGENDARY)
 )
+
+val FREE_SPECIES: List<String> = PETS.filter { it.price == 0 }.map { it.id }
 
 fun petEmoji(species: String) = PETS.find { it.id == species }?.emoji ?: "🐾"
 fun petSpeciesName(species: String) = PETS.find { it.id == species }?.name ?: species
 
-data class OutfitInfo(val id: String, val name: String, val emoji: String, val level: Int, val seasonal: Boolean = false, val season: String? = null)
+/**
+ * Wearables. Regular outfits unlock by [level]; [price] > 0 makes it buyable with coins instead;
+ * [premium] makes it Premium-exclusive. Seasonal/theme entries also recolour the app via Theme.kt.
+ */
+data class OutfitInfo(
+    val id: String,
+    val name: String,
+    val emoji: String,
+    val level: Int,
+    val seasonal: Boolean = false,
+    val season: String? = null,
+    val price: Int = 0,
+    val premium: Boolean = false
+)
 
 val OUTFITS = listOf(
     OutfitInfo("default", "Default", "⭐", 1),
@@ -38,8 +67,23 @@ val OUTFITS = listOf(
     OutfitInfo("sporty", "Sporty", "⚡", 5),
     OutfitInfo("royal", "Royal", "👑", 10),
     OutfitInfo("cosmic", "Cosmic", "🌌", 15),
-    OutfitInfo("golden", "Golden", "✨", 20)
+    OutfitInfo("golden", "Golden", "✨", 20),
+    OutfitInfo("bow", "Bow", "🎀", 1, premium = true),
+    OutfitInfo("flutter", "Flutter", "🦋", 1, premium = true)
 )
+
+/** Colour themes beyond the four free seasons: some bought with coins, some Premium-only. */
+val THEMES = listOf(
+    OutfitInfo("ocean", "Ocean", "🌊", 1, price = 200),
+    OutfitInfo("mint", "Mint", "🍃", 1, price = 200),
+    OutfitInfo("lavender", "Lavender", "💜", 1, price = 200),
+    OutfitInfo("sunset", "Sunset", "🌅", 1, price = 250),
+    OutfitInfo("candy", "Candy", "🍭", 1, price = 250),
+    OutfitInfo("rainbow", "Rainbow", "🌈", 1, premium = true),
+    OutfitInfo("galaxy", "Galaxy", "🪐", 1, premium = true)
+)
+
+val ALL_WEARABLES: List<OutfitInfo> get() = OUTFITS + SEASONAL_OUTFITS + THEMES
 
 val SEASONAL_OUTFITS = listOf(
     OutfitInfo("spring", "Spring", "🌸", 1, true, "spring"),

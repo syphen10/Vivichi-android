@@ -221,6 +221,13 @@ object StatusNotification {
         "summer" -> 0xFFFFF3D1.toInt() to 0xFFFFE0A8.toInt()
         "autumn" -> 0xFFFFE6D2.toInt() to 0xFFFFCBA8.toInt()
         "winter" -> 0xFFE2F0FB.toInt() to 0xFFC5E2F5.toInt()
+        "ocean" -> 0xFFDDF1FB.toInt() to 0xFFBFE0F5.toInt()
+        "mint" -> 0xFFDFF8EE.toInt() to 0xFFC2EEDB.toInt()
+        "lavender" -> 0xFFEEE8FF.toInt() to 0xFFDCD0FF.toInt()
+        "sunset" -> 0xFFFFE8DC.toInt() to 0xFFFFD3DC.toInt()
+        "candy" -> 0xFFFFE3F1.toInt() to 0xFFEADCFF.toInt()
+        "rainbow" -> 0xFFFFE6E6.toInt() to 0xFFDDEBFF.toInt()
+        "galaxy" -> 0xFFE8E2FF.toInt() to 0xFFF6DDF1.toInt()
         else -> 0xFFFFE6F0.toInt() to 0xFFEADEFF.toInt()
     }
 

@@ -14,12 +14,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+data class Reward(val xp: Int, val intensity: String, val coins: Int)
+
 data class UiEvent(
-    val xpToast: Pair<Int, String>? = null,
+    val xpToast: Reward? = null,
     val leveledUpTo: Int? = null,
     val diedEntry: CemeteryEntry? = null,
     val missedDays: Int? = null,
-    val earlyConfirm: Pair<String, Int>? = null // habitId, minutesAhead
+    val earlyConfirm: Pair<String, Int>? = null, // habitId, minutesAhead
+    /** Current pet is a species the user no longer owns (e.g. after animals became locked). */
+    val mustPickPet: Boolean = false
 )
 
 class VivichiViewModel(
@@ -44,6 +48,8 @@ class VivichiViewModel(
             val loaded = repository.current()
             _state.value = loaded
             runDayCheck()
+            applyPremiumBonus()
+            checkOwnedPet()
             _isReady.value = true
             // Re-arm every enabled habit's alarm on each launch. AlarmManager alarms don't
             // survive reboots or app force-stops, and previously they were only ever set when
@@ -75,8 +81,25 @@ class VivichiViewModel(
             isReady.first { it }
             _state.value = newState
             _event.value = UiEvent()
+            checkOwnedPet()
             persist()
             scheduler?.rescheduleAll(_state.value)
+        }
+    }
+
+    private fun checkOwnedPet() {
+        val s = _state.value
+        if (s.onboarded && !GameLogic.ownsSpecies(s, s.pet.species)) {
+            _event.value = _event.value.copy(mustPickPet = true)
+        }
+    }
+
+    private fun applyPremiumBonus() {
+        val s = _state.value
+        val today = GameLogic.today()
+        if (s.premium && s.lastPremiumBonus != today) {
+            _state.value = s.copy(coins = s.coins + GameLogic.PREMIUM_DAILY_BONUS, lastPremiumBonus = today)
+            persist()
         }
     }
 
@@ -176,7 +199,7 @@ class VivichiViewModel(
         _state.value = result.state
         val habit = _state.value.habits.find { it.id == habitId }
         _event.value = _event.value.copy(
-            xpToast = result.xpGained to (habit?.intensity ?: "low"),
+            xpToast = Reward(result.xpGained, habit?.intensity ?: "low", result.coinsGained),
             leveledUpTo = result.leveledUpTo
         )
         persist()
@@ -231,13 +254,47 @@ class VivichiViewModel(
     // ---------- Style ----------
 
     fun pickSpecies(species: String) {
+        if (!GameLogic.ownsSpecies(_state.value, species)) return
         _state.value = _state.value.copy(pet = _state.value.pet.copy(species = species))
+        _event.value = _event.value.copy(mustPickPet = false)
         persist()
     }
 
+    /** Spends coins on a species and switches to it. Returns false if it can't be afforded. */
+    fun buySpecies(species: String): Boolean {
+        val s = _state.value
+        val info = PETS.find { it.id == species } ?: return false
+        if (GameLogic.ownsSpecies(s, species)) { pickSpecies(species); return true }
+        if (s.coins < info.price) return false
+        _state.value = s.copy(
+            coins = s.coins - info.price,
+            ownedSpecies = s.ownedSpecies + species,
+            pet = s.pet.copy(species = species)
+        )
+        persist()
+        return true
+    }
+
     fun pickOutfit(outfit: String) {
+        val item = ALL_WEARABLES.find { it.id == outfit } ?: return
+        if (!GameLogic.canWear(_state.value, item)) return
         _state.value = _state.value.copy(pet = _state.value.pet.copy(outfit = outfit))
         persist()
+    }
+
+    /** Spends coins on an outfit/theme and wears it. Returns false if it can't be afforded. */
+    fun buyWearable(id: String): Boolean {
+        val s = _state.value
+        val item = ALL_WEARABLES.find { it.id == id } ?: return false
+        if (GameLogic.canWear(s, item)) { pickOutfit(id); return true }
+        if (item.premium || item.price <= 0 || s.coins < item.price) return false
+        _state.value = s.copy(
+            coins = s.coins - item.price,
+            ownedWearables = s.ownedWearables + id,
+            pet = s.pet.copy(outfit = id)
+        )
+        persist()
+        return true
     }
 
     // ---------- Stats ----------

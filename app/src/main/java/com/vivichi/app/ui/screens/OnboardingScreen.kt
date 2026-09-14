@@ -125,10 +125,10 @@ private fun StepName(name: String, onChange: (String) -> Unit, onNext: () -> Uni
 @Composable
 private fun StepSpecies(species: String, onChange: (String) -> Unit, onNext: () -> Unit) {
     Text("Pick your buddy!", fontSize = 19.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-    Text("6 unique companions, all free!", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 16.dp))
-    val choices = PETS.take(6)
+    Text("Start with one of these four — unlock more buddies with coins later!", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 16.dp))
+    val choices = PETS.filter { it.price == 0 }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (row in choices.chunked(3)) {
+        for (row in choices.chunked(2)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { p ->
                     val selected = species == p.id

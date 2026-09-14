@@ -58,5 +58,14 @@ enum class EmojiName(val resId: Int) {
     TELEPHONE(R.raw.emo_telephone), CALENDAR(R.raw.emo_calendar), COFFEE(R.raw.emo_coffee),
     POTTED_PLANT(R.raw.emo_potted_plant), SHOWER(R.raw.emo_shower), HEADPHONES(R.raw.emo_headphones),
     PARTY_FACE(R.raw.emo_party_face), GRIN(R.raw.emo_grin), STAR_STRUCK(R.raw.emo_star_struck),
-    SUNGLASSES(R.raw.emo_sunglasses), TRUMPET(R.raw.emo_trumpet), GUITAR(R.raw.emo_guitar), GIFT(R.raw.emo_gift)
+    SUNGLASSES(R.raw.emo_sunglasses), TRUMPET(R.raw.emo_trumpet), GUITAR(R.raw.emo_guitar), GIFT(R.raw.emo_gift),
+
+    HAMSTER(R.raw.emo_hamster), FROG(R.raw.emo_frog), LION(R.raw.emo_lion), TIGER(R.raw.emo_tiger),
+    KOALA(R.raw.emo_koala), OTTER(R.raw.emo_otter), UNICORN(R.raw.emo_unicorn),
+
+    WAVE(R.raw.emo_wave), LEAVES(R.raw.emo_leaves), SUNSET(R.raw.emo_sunset), LOLLIPOP(R.raw.emo_lollipop),
+    PURPLE_HEART(R.raw.emo_purple_heart), RAINBOW(R.raw.emo_rainbow), PLANET(R.raw.emo_planet),
+    RIBBON(R.raw.emo_ribbon), BUTTERFLY(R.raw.emo_butterfly),
+
+    COIN(R.raw.emo_coin), GEM(R.raw.emo_gem), TV(R.raw.emo_tv)
 }

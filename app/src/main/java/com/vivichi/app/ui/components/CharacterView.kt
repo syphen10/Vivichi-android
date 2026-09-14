@@ -15,8 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.vivichi.app.data.OUTFITS
-import com.vivichi.app.data.SEASONAL_OUTFITS
+import com.vivichi.app.data.ALL_WEARABLES
 import com.vivichi.app.data.petEmoji
 import com.vivichi.app.domain.Mood
 import com.vivichi.app.ui.theme.*
@@ -84,7 +83,7 @@ fun CharacterView(
             EmojiGlyph(raw = petEmoji(species), size = size * 0.6f)
         }
 
-        val outfitInfo = (OUTFITS + SEASONAL_OUTFITS).find { it.id == outfit }
+        val outfitInfo = ALL_WEARABLES.find { it.id == outfit }
         if (outfitInfo != null && outfit != "default") {
             Box(
                 modifier = Modifier

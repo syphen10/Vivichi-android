@@ -44,7 +44,16 @@ val EMOJI_MAP: Map<String, EmojiName> = mapOf(
     "📞" to EmojiName.TELEPHONE, "📅" to EmojiName.CALENDAR, "☕" to EmojiName.COFFEE,
     "🪴" to EmojiName.POTTED_PLANT, "🚿" to EmojiName.SHOWER, "🎧" to EmojiName.HEADPHONES,
     "🥳" to EmojiName.PARTY_FACE, "😄" to EmojiName.GRIN, "🤩" to EmojiName.STAR_STRUCK,
-    "😎" to EmojiName.SUNGLASSES, "🎺" to EmojiName.TRUMPET, "🎸" to EmojiName.GUITAR, "🎁" to EmojiName.GIFT
+    "😎" to EmojiName.SUNGLASSES, "🎺" to EmojiName.TRUMPET, "🎸" to EmojiName.GUITAR, "🎁" to EmojiName.GIFT,
+
+    "🐹" to EmojiName.HAMSTER, "🐸" to EmojiName.FROG, "🦁" to EmojiName.LION, "🐯" to EmojiName.TIGER,
+    "🐨" to EmojiName.KOALA, "🦦" to EmojiName.OTTER, "🦄" to EmojiName.UNICORN,
+
+    "🌊" to EmojiName.WAVE, "🍃" to EmojiName.LEAVES, "🌅" to EmojiName.SUNSET, "🍭" to EmojiName.LOLLIPOP,
+    "💜" to EmojiName.PURPLE_HEART, "🌈" to EmojiName.RAINBOW, "🪐" to EmojiName.PLANET,
+    "🎀" to EmojiName.RIBBON, "🦋" to EmojiName.BUTTERFLY,
+
+    "🪙" to EmojiName.COIN, "💎" to EmojiName.GEM, "📺" to EmojiName.TV
 )
 
 /** Drop-in replacement for `Text(emoji, fontSize = X.sp)` — renders the bundled Twemoji asset

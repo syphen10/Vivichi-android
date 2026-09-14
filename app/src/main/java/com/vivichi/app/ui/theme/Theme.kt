@@ -65,6 +65,13 @@ fun seasonalGradient(equippedOutfit: String): List<Color> = when (equippedOutfit
     "summer" -> listOf(Yellow, Orange)
     "autumn" -> listOf(Color(0xFFFF9A62), Color(0xFFD35400))
     "winter" -> listOf(Color(0xFF85C1E9), Color(0xFF2980B9))
+    "ocean" -> listOf(Color(0xFF7FD1F5), Color(0xFF3A8FD8))
+    "mint" -> listOf(Color(0xFF8EE3C8), Color(0xFF3CB38A))
+    "lavender" -> listOf(Color(0xFFC9B6FF), Color(0xFF8E7CF0))
+    "sunset" -> listOf(Color(0xFFFFB38A), Color(0xFFF2668B))
+    "candy" -> listOf(Color(0xFFFF9CCB), Color(0xFFB18CFF))
+    "rainbow" -> listOf(Color(0xFFFF9A9E), Color(0xFFFAD0C4), Color(0xFFA1C4FD))
+    "galaxy" -> listOf(Color(0xFF7A6CF0), Color(0xFFE06BC8))
     else -> listOf(Purple, Pink)
 }
 
@@ -75,6 +82,13 @@ fun seasonalBackground(equippedOutfit: String): Color = when (equippedOutfit) {
     "summer" -> Color(0xFFFEF9E7)
     "autumn" -> Color(0xFFFEF0E6)
     "winter" -> Color(0xFFEBF5FB)
+    "ocean" -> Color(0xFFE6F4FB)
+    "mint" -> Color(0xFFE9FBF3)
+    "lavender" -> Color(0xFFF3EEFF)
+    "sunset" -> Color(0xFFFFF0E8)
+    "candy" -> Color(0xFFFFEAF5)
+    "rainbow" -> Color(0xFFFFF3F0)
+    "galaxy" -> Color(0xFFEFEAFF)
     else -> BgPink
 }
 

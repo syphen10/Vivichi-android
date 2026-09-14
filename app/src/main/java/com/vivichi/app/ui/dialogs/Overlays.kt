@@ -151,15 +151,20 @@ fun EarlyConfirmDialog(habitName: String, minutesAhead: Int, onConfirm: () -> Un
 }
 
 @Composable
-fun BoxScope.XpToast(xp: Int, intensity: String) {
+fun BoxScope.XpToast(xp: Int, intensity: String, coins: Int = 0) {
     val label = when (intensity) { "medium" -> "Medium"; "high" -> "High"; else -> "Low" }
-    Box(
+    Row(
         Modifier
             .align(Alignment.Center)
             .background(Brush.horizontalGradient(listOf(PurpleDark, Pink)), RoundedCornerShape(18.dp))
-            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text("+$xp XP · $label", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
+        if (coins > 0) {
+            Text("  ·  +$coins ", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
+            EmojiGlyph(raw = "🪙", size = 20.dp)
+        }
     }
 }
 

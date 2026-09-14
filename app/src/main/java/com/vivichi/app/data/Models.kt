@@ -73,7 +73,16 @@ data class AppState(
     val lastSeen: String? = null,
     val achievements: Achievements = Achievements(),
     val tutorialSeen: Boolean = false,
-    val statusPanel: Boolean = true
+    val statusPanel: Boolean = true,
+    val coins: Int = 0,
+    /** Species bought with coins. Free species and Premium aren't recorded here. */
+    val ownedSpecies: List<String> = emptyList(),
+    /** Outfits/themes bought with coins. */
+    val ownedWearables: List<String> = emptyList(),
+    val premium: Boolean = false,
+    val lastPremiumBonus: String? = null,
+    val adsDate: String? = null,
+    val adsWatchedToday: Int = 0
 )
 
 /**

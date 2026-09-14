@@ -18,12 +18,42 @@ data class HabitAttemptResult(
     val minutesAhead: Int,
     val xpGained: Int,
     val leveledUpTo: Int?,
-    val streakCompletedToday: Boolean
+    val streakCompletedToday: Boolean,
+    val coinsGained: Int = 0
 )
 
 object GameLogic {
 
     fun today(): String = LocalDate.now().toString()
+
+    // ---------- Economy ----------
+
+    const val COINS_ALL_DONE_BONUS = 20
+    const val COINS_PER_AD = 15
+    const val MAX_ADS_PER_DAY = 5
+    const val PREMIUM_DAILY_BONUS = 25
+
+    fun coinsForHabit(habit: Habit): Int = when (habit.intensity) {
+        "high" -> 15
+        "medium" -> 8
+        else -> 5
+    }
+
+    fun ownsSpecies(state: AppState, speciesId: String): Boolean {
+        val species = PETS.find { it.id == speciesId } ?: return false
+        return species.price == 0 || state.premium || speciesId in state.ownedSpecies
+    }
+
+    /** Whether an outfit/theme is usable right now (level, coin purchase, or Premium). */
+    fun canWear(state: AppState, item: OutfitInfo): Boolean = when {
+        item.premium -> state.premium
+        item.price > 0 -> state.premium || item.id in state.ownedWearables
+        item.seasonal -> true
+        else -> state.pet.level >= item.level
+    }
+
+    fun adsLeftToday(state: AppState): Int =
+        if (state.adsDate != today()) MAX_ADS_PER_DAY else (MAX_ADS_PER_DAY - state.adsWatchedToday).coerceAtLeast(0)
 
     private fun toMins(time: String): Int {
         val (h, m) = time.split(":").map { it.toInt() }
@@ -189,6 +219,8 @@ object GameLogic {
             health = minOf(100, health + 5)
         }
 
+        val coinsGained = coinsForHabit(habit) + if (allDoneNow) COINS_ALL_DONE_BONUS else 0
+
         val newState = state.copy(
             pet = state.pet.copy(level = level, xp = xp, health = health),
             totalXP = state.totalXP + habit.xp,
@@ -196,9 +228,10 @@ object GameLogic {
             streak = streak,
             bestStreak = bestStreak,
             achievements = achievements,
-            todayLog = state.todayLog.copy(completed = completed)
+            todayLog = state.todayLog.copy(completed = completed),
+            coins = state.coins + coinsGained
         )
-        return HabitAttemptResult(newState, true, false, 0, habit.xp, leveledUp, allDoneNow)
+        return HabitAttemptResult(newState, true, false, 0, habit.xp, leveledUp, allDoneNow, coinsGained)
     }
 
     /** Marks any active habits whose 2.5h completion window has passed as expired. */

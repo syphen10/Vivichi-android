@@ -1,5 +1,11 @@
 package com.vivichi.app.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -25,6 +31,8 @@ fun VivichiApp(viewModel: VivichiViewModel) {
     val state by viewModel.state.collectAsState()
     val event by viewModel.event.collectAsState()
     var tab by remember { mutableStateOf(Tab.HOME) }
+    var showPremium by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val bgColor = seasonalBackground(state.pet.outfit)
 
@@ -34,30 +42,56 @@ fun VivichiApp(viewModel: VivichiViewModel) {
         } else {
             Scaffold(
                 containerColor = bgColor,
+                // Coins + Premium are visible on every tab. The bar handles the status bar inset
+                // itself, so screens underneath no longer need to paint behind the status bar.
+                topBar = {
+                    com.vivichi.app.ui.components.EconomyBar(
+                        coins = state.coins,
+                        isPremium = state.premium,
+                        onCoins = { tab = Tab.STYLE },
+                        onPremium = { showPremium = true }
+                    )
+                },
                 bottomBar = { VivichiBottomBar(tab) { tab = it } }
             ) { padding ->
                 Box(Modifier.padding(padding).fillMaxSize()) {
-                    when (tab) {
-                        Tab.HOME -> HomeScreen(viewModel, onNavigateHabits = { tab = Tab.HABITS })
-                        Tab.HABITS -> HabitsScreen(viewModel)
-                        Tab.STATS -> StatsScreen(viewModel)
-                        Tab.STYLE -> StyleScreen(viewModel)
-                        Tab.PLAY -> PlaygroundScreen(viewModel)
-                        Tab.CEMETERY -> CemeteryScreen(viewModel)
-                        Tab.SETTINGS -> SettingsScreen(viewModel)
+                    AnimatedContent(
+                        targetState = tab,
+                        transitionSpec = {
+                            (fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 24 }) togetherWith fadeOut(tween(120))
+                        },
+                        label = "tab"
+                    ) { current ->
+                        when (current) {
+                            Tab.HOME -> HomeScreen(viewModel, onNavigateHabits = { tab = Tab.HABITS })
+                            Tab.HABITS -> HabitsScreen(viewModel)
+                            Tab.STATS -> StatsScreen(viewModel)
+                            Tab.STYLE -> StyleScreen(viewModel, onOpenPremium = { showPremium = true })
+                            Tab.PLAY -> PlaygroundScreen(viewModel)
+                            Tab.CEMETERY -> CemeteryScreen(viewModel)
+                            Tab.SETTINGS -> SettingsScreen(viewModel)
+                        }
                     }
                 }
             }
-            // Edge-to-edge: the app draws behind the status bar, and window.statusBarColor is
-            // ignored from Android 15. The Playground header is a gradient, so paint the same
-            // gradient behind the status bar to avoid a seam. Drawn after the Scaffold, whose
-            // container background would otherwise cover it.
-            if (tab == Tab.PLAY) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .windowInsetsTopHeight(WindowInsets.statusBars)
-                        .background(androidx.compose.ui.graphics.Brush.horizontalGradient(seasonalGradient(state.pet.outfit)))
+            if (showPremium) {
+                com.vivichi.app.ui.components.PremiumDialog(
+                    isPremium = state.premium,
+                    priceLabel = null,
+                    onBuy = {
+                        android.widget.Toast.makeText(context, "Premium purchases are coming very soon!", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onRestore = {
+                        android.widget.Toast.makeText(context, "Nothing to restore yet", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onDismiss = { showPremium = false }
+                )
+            }
+            if (event.mustPickPet && event.diedEntry == null) {
+                com.vivichi.app.ui.components.ForcePickPetDialog(
+                    petName = state.pet.name,
+                    owned = com.vivichi.app.data.PETS.filter { com.vivichi.app.domain.GameLogic.ownsSpecies(state, it.id) },
+                    onPick = { viewModel.pickSpecies(it) }
                 )
             }
             if (!state.tutorialSeen) {
@@ -94,8 +128,8 @@ fun VivichiApp(viewModel: VivichiViewModel) {
                     onCancel = { viewModel.clearEarlyConfirm() }
                 )
             }
-            event.xpToast?.let { (xp, intensity) ->
-                XpToast(xp = xp, intensity = intensity)
+            event.xpToast?.let { reward ->
+                XpToast(xp = reward.xp, intensity = reward.intensity, coins = reward.coins)
                 LaunchedEffect(event.xpToast) {
                     kotlinx.coroutines.delay(1400)
                     if (event.leveledUpTo == null) viewModel.clearXpToast()
