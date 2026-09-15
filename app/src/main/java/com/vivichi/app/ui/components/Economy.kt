@@ -106,7 +106,14 @@ fun EconomyBar(coins: Int, isPremium: Boolean, onCoins: () -> Unit, onPremium: (
 }
 
 @Composable
-fun PremiumDialog(isPremium: Boolean, priceLabel: String?, onBuy: () -> Unit, onRestore: () -> Unit, onDismiss: () -> Unit) {
+fun PremiumDialog(
+    isPremium: Boolean,
+    priceLabel: String?,
+    onBuy: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit,
+    message: String? = null
+) {
     // Confetti only when Premium switches on while the dialog is open (i.e. a purchase just landed).
     val wasPremium = remember { isPremium }
     Dialog(onDismissRequest = onDismiss) {
@@ -149,6 +156,19 @@ fun PremiumDialog(isPremium: Boolean, priceLabel: String?, onBuy: () -> Unit, on
                     }
                 }
                 Spacer(Modifier.height(14.dp))
+                // Result of the last buy/restore attempt, right where the user is looking.
+                androidx.compose.animation.AnimatedVisibility(visible = message != null) {
+                    Text(
+                        message.orEmpty(),
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B6914), textAlign = TextAlign.Center, lineHeight = 18.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFFFFF3CD))
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                    )
+                }
                 if (isPremium) {
                     VivichiButton(text = "All unlocked ✨", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
                 } else {

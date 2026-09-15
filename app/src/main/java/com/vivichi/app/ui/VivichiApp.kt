@@ -32,6 +32,9 @@ import com.vivichi.app.util.SoundFx
 /** Hooks into the Activity-bound store pieces (Play Billing, rewarded ads). */
 data class StoreHooks(
     val premiumPrice: String? = null,
+    /** Latest purchase/restore outcome from Google Play, waiting to be shown. */
+    val storeMessage: String? = null,
+    val onStoreMessageSeen: () -> Unit = {},
     val adReady: Boolean = false,
     val onBuyPremium: () -> Unit = {},
     val onRestorePremium: () -> Unit = {},
@@ -110,9 +113,23 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
                 com.vivichi.app.ui.components.PremiumDialog(
                     isPremium = state.premium,
                     priceLabel = store.premiumPrice,
-                    onBuy = store.onBuyPremium,
-                    onRestore = store.onRestorePremium,
-                    onDismiss = { showPremium = false }
+                    message = store.storeMessage,
+                    onBuy = { store.onStoreMessageSeen(); store.onBuyPremium() },
+                    onRestore = { store.onStoreMessageSeen(); store.onRestorePremium() },
+                    onDismiss = { store.onStoreMessageSeen(); showPremium = false }
+                )
+            } else if (store.storeMessage != null) {
+                // e.g. "Restore purchase" tapped from the More screen, with no Premium dialog open.
+                AlertDialog(
+                    onDismissRequest = store.onStoreMessageSeen,
+                    icon = { com.vivichi.app.ui.components.EmojiGlyph(raw = "💎", size = 34.dp) },
+                    title = { Text("Vivichi Premium", fontWeight = androidx.compose.ui.text.font.FontWeight.Black) },
+                    text = { Text(store.storeMessage) },
+                    confirmButton = {
+                        TextButton(onClick = store.onStoreMessageSeen) {
+                            Text("OK", color = PinkDark, fontWeight = androidx.compose.ui.text.font.FontWeight.Black)
+                        }
+                    }
                 )
             }
             if (showCoins) {

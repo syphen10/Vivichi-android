@@ -119,7 +119,7 @@ class PremiumBilling(
             if (d == null) {
                 // Product not set up in Play Console yet, or this build isn't installed from Play.
                 queryDetails()
-                _messages.tryEmit("Premium isn't available right now. Please try again later.")
+                _messages.tryEmit("Premium can only be bought when Vivichi is installed from Google Play. If you got it from Google Play, please try again in a moment.")
                 return@connect
             }
             val params = BillingFlowParams.newBuilder()

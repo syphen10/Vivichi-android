@@ -14,6 +14,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import android.content.Intent
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private lateinit var billing: PremiumBilling
+    private var storeMessage by androidx.compose.runtime.mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -55,7 +57,9 @@ class MainActivity : ComponentActivity() {
 
         billing = PremiumBilling(this) { owned -> viewModel.setPremium(owned) }
         lifecycleScope.launch {
-            billing.messages.collect { Toast.makeText(this@MainActivity, it, Toast.LENGTH_LONG).show() }
+            // Shown inside the Premium dialog (or as its own popup) — a toast sits behind the
+            // dialog's dimmed backdrop and is easy to miss entirely.
+            billing.messages.collect { storeMessage = it }
         }
 
         // Premium users never see ads, so don't even start the ad SDK (or its consent form) for them.
@@ -82,6 +86,8 @@ class MainActivity : ComponentActivity() {
                     viewModel = viewModel,
                     store = StoreHooks(
                         premiumPrice = price,
+                        storeMessage = storeMessage,
+                        onStoreMessageSeen = { storeMessage = null },
                         adReady = adReady,
                         onBuyPremium = { billing.buy(this) },
                         onRestorePremium = { billing.restore() },
