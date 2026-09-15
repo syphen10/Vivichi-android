@@ -1,6 +1,14 @@
 package com.vivichi.app.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.graphics.graphicsLayer
+import com.vivichi.app.ui.components.ConfettiBurst
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -46,7 +54,8 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
     var showCoins by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    val bgColor = seasonalBackground(state.pet.outfit)
+    // Theme changes wash across the app instead of snapping.
+    val bgColor by animateColorAsState(seasonalBackground(state.pet.outfit), tween(700), label = "bg")
     // Premium means no ads anywhere, so the offer simply doesn't exist for them.
     val adOffer = if (state.premium) null else com.vivichi.app.ui.components.AdOffer(
         adsLeft = com.vivichi.app.domain.GameLogic.adsLeftToday(state),
@@ -156,11 +165,30 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
                     onCancel = { viewModel.clearEarlyConfirm() }
                 )
             }
-            event.xpToast?.let { reward ->
-                XpToast(xp = reward.xp, intensity = reward.intensity, coins = reward.coins)
-                LaunchedEffect(event.xpToast) {
-                    kotlinx.coroutines.delay(1400)
-                    if (event.leveledUpTo == null) viewModel.clearXpToast()
+            // Keep the last reward around so the toast can animate *out* after the event clears.
+            var shownReward by remember { mutableStateOf<Reward?>(null) }
+            LaunchedEffect(event.xpToast) {
+                val reward = event.xpToast ?: return@LaunchedEffect
+                shownReward = reward
+                kotlinx.coroutines.delay(1500)
+                if (viewModel.event.value.leveledUpTo == null) viewModel.clearXpToast()
+            }
+            // Confetti for habits, a shower of coins for coin-only rewards (ads).
+            ConfettiBurst(
+                trigger = event.xpToast,
+                colors = if ((event.xpToast?.xp ?: 1) > 0) com.vivichi.app.ui.components.ConfettiColors else com.vivichi.app.ui.components.CoinColors,
+                coins = (event.xpToast?.xp ?: 1) == 0,
+                count = if ((event.xpToast?.xp ?: 1) > 0) 60 else 36,
+                origin = androidx.compose.ui.geometry.Offset(0.5f, 0.5f)
+            )
+            AnimatedVisibility(
+                visible = event.xpToast != null,
+                enter = scaleIn(spring(dampingRatio = 0.45f, stiffness = 400f), initialScale = 0.4f) + fadeIn(tween(150)),
+                exit = fadeOut(tween(250)) + slideOutVertically(tween(300)) { -it * 2 },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    shownReward?.let { XpToast(xp = it.xp, intensity = it.intensity, coins = it.coins) }
                 }
             }
         }
@@ -183,7 +211,20 @@ private fun VivichiBottomBar(current: Tab, onSelect: (Tab) -> Unit) {
             NavigationBarItem(
                 selected = current == t,
                 onClick = { SoundFx.nav(); onSelect(t) },
-                icon = { Icon(icons[t]!!, contentDescription = t.label) },
+                icon = {
+                    // Selected icon hops up and settles with a little overshoot.
+                    val selected = current == t
+                    val lift by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = 0.4f, stiffness = 500f), label = "navLift")
+                    Icon(
+                        icons[t]!!,
+                        contentDescription = t.label,
+                        modifier = Modifier.graphicsLayer {
+                            val s = 1f + 0.18f * lift
+                            scaleX = s; scaleY = s
+                            translationY = -3.dp.toPx() * lift
+                        }
+                    )
+                },
                 label = { Text(t.label, style = MaterialTheme.typography.labelSmall) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = PinkDark,

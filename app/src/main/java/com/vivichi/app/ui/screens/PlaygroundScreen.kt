@@ -27,9 +27,14 @@ import com.vivichi.app.domain.Mood
 import com.vivichi.app.ui.VivichiViewModel
 import com.vivichi.app.ui.components.CharacterView
 import com.vivichi.app.ui.components.EmojiGlyph
+import com.vivichi.app.ui.components.EmojiBurst
+import com.vivichi.app.ui.components.FloatingSparkles
+import com.vivichi.app.ui.components.bounceClick
+import com.vivichi.app.ui.components.enterFromBelow
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
 import kotlinx.coroutines.delay
+import androidx.compose.animation.togetherWith
 import kotlin.random.Random
 
 private data class PlayAction(val key: String, val emoji: String, val label: String, val colors: List<Color>)
@@ -50,18 +55,30 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
     var reaction by remember { mutableStateOf<String?>(null) }
     var bump by remember { mutableIntStateOf(0) }
     var cooldown by remember { mutableStateOf(false) }
+    var burst by remember { mutableStateOf<Pair<Int, String>?>(null) }
 
-    val scale by animateFloatAsState(if (bump % 2 == 1) 1.12f else 1f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "bump")
+    // Every tap pops the pet up and springs it back (a toggle would shrink on every other tap).
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(bump) {
+        if (bump > 0) {
+            pop.animateTo(1.16f, tween(110))
+            pop.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+        }
+    }
+    val scale = pop.value
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Box(
             Modifier
+                .padding(horizontal = 13.dp)
+                .padding(top = 8.dp)
                 .fillMaxWidth()
-                .background(Brush.horizontalGradient(seasonalGradient(state.pet.outfit)), RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
-                .padding(16.dp, 24.dp, 16.dp, 22.dp),
+                .clip(RoundedCornerShape(26.dp))
+                .background(Brush.linearGradient(seasonalGradient(state.pet.outfit))),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            FloatingSparkles(Modifier.matchParentSize(), color = Color.White, count = 12, seed = 21)
+            Column(Modifier.padding(16.dp, 20.dp, 16.dp, 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Playground 🐾", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Black)
                 Text("Spend time with your buddy!", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
             }
@@ -72,6 +89,7 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
                 Box(Modifier.scale(scale)) {
                     CharacterView(species = state.pet.species, mood = Mood.HAPPY, outfit = state.pet.outfit, health = state.pet.health, size = 180.dp)
                 }
+                burst?.let { (id, emoji) -> EmojiBurst(trigger = id, emoji = emoji, modifier = Modifier.size(180.dp)) }
             }
         }
         Box(
@@ -95,13 +113,17 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
                 .padding(20.dp, 15.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(message, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 19.sp)
+            androidx.compose.animation.AnimatedContent(
+                targetState = message,
+                transitionSpec = { androidx.compose.animation.scaleIn(initialScale = 0.9f) + androidx.compose.animation.fadeIn() togetherWith androidx.compose.animation.fadeOut() },
+                label = "msg"
+            ) { m -> Text(m, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 19.sp) }
         }
 
         val rows = ACTIONS.chunked(2)
         Column(Modifier.padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            rows.forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            rows.forEachIndexed { rowIndex, row ->
+                Row(Modifier.enterFromBelow(rowIndex + 1), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     row.forEach { action ->
                         PlayButton(action, Modifier.weight(1f), enabled = !cooldown) {
                             if (cooldown) return@PlayButton
@@ -110,6 +132,7 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
                             message = if (msgs.isNotEmpty()) msgs[Random.nextInt(msgs.size)] else "..."
                             reaction = REACT_EMOJI[action.key]
                             bump++
+                            burst = bump to action.emoji
                             SoundFx.playgroundAction(action.key)
                         }
                     }
@@ -137,9 +160,8 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
 private fun PlayButton(action: PlayAction, modifier: Modifier = Modifier, enabled: Boolean, onClick: () -> Unit) {
     Column(
         modifier
-            .clip(RoundedCornerShape(22.dp))
+            .bounceClick(RoundedCornerShape(22.dp), enabled = enabled, pressedScale = 0.9f, onClick = onClick)
             .background(Brush.linearGradient(action.colors))
-            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 17.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

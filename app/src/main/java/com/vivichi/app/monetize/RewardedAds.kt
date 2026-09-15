@@ -84,6 +84,7 @@ object RewardedAds {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewarded = ad
                     loading = false
+                    retryDelayMs = FIRST_RETRY_MS
                     _ready.value = true
                 }
 
@@ -91,10 +92,29 @@ object RewardedAds {
                     rewarded = null
                     loading = false
                     _ready.value = false
+                    // No fill or no network: try again later with backoff, otherwise the button
+                    // would sit on "Loading ad…" until the app is restarted.
+                    val delay = retryDelayMs
+                    retryDelayMs = (retryDelayMs * 2).coerceAtMost(MAX_RETRY_MS)
+                    mainHandler.postDelayed({ load(context) }, delay)
                 }
             }
         )
     }
+
+    /** Call when the user is likely to want an ad soon (e.g. app resumed); no-op if one is ready. */
+    fun preload(context: Context) {
+        if (rewarded == null && !loading && sdkStarted.get()) {
+            mainHandler.removeCallbacksAndMessages(null)
+            retryDelayMs = FIRST_RETRY_MS
+            load(context.applicationContext)
+        }
+    }
+
+    private const val FIRST_RETRY_MS = 15_000L
+    private const val MAX_RETRY_MS = 120_000L
+    private var retryDelayMs = FIRST_RETRY_MS
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     /**
      * Shows the preloaded ad. [onReward] runs after the ad closes, and only if it was watched

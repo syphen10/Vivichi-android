@@ -154,11 +154,12 @@ $panel = New-Object System.Drawing.RectangleF(179, 830, 817, 252)
 $slides = @(
   @{ f="home.png";        o="01-home.png";     l1="Your buddy lives"; l2="on your habits";   s="Keep them happy, healthy and alive";     t="#FDF4E9"; b="#FFD6E4"; ga="#FFC486"; gb="#FF9EBB"; c=$none },
   @{ f="habits.png";      o="02-habits.png";   l1="Build habits";     l2="that stick";       s="Check them off before they expire";      t="#FFE6F0"; b="#E4D9FF"; ga="#FFB3C8"; gb="#C4B0FF"; c=$none },
-  @{ f="shade_clean.png"; o="03-panel.png";    l1="Check in";         l2="with one swipe";   s="Health & habit countdown in your shade"; t="#EAE4FF"; b="#FFDDE9"; ga="#C4B0FF"; gb="#FF9EBB"; c=$panel },
-  @{ f="style.png";       o="04-style.png";    l1="Pick your pet,";   l2="dress them up";    s="Unlock outfits & seasonal themes";       t="#EEE6FF"; b="#D9ECFF"; ga="#D4C4FF"; gb="#A8D8FF"; c=$none },
-  @{ f="play.png";        o="05-play.png";     l1="Play with";        l2="your buddy";       s="Feed, pet, hug, sing and tickle";        t="#FFEBD9"; b="#FFD1DF"; ga="#FFD166"; gb="#FF85A2"; c=$none },
-  @{ f="stats.png";       o="06-stats.png";    l1="Track streaks,";   l2="earn titles";      s="Watch your progress grow every day";     t="#DFF7ED"; b="#E6DEFF"; ga="#A8E6CF"; gb="#C4B0FF"; c=$none },
-  @{ f="edit.png";        o="07-schedule.png"; l1="Your habits,";     l2="your schedule";    s="Set the time, icon and XP for each";     t="#E2F0FF"; b="#FFE0EC"; ga="#B8D8FF"; gb="#FFB3C8"; c=$none }
+  @{ f="buddies.png";     o="03-buddies.png";  l1="Unlock 16";        l2="adorable buddies"; s="From foxes and koalas to a dragon";      t="#EEE6FF"; b="#FFE3EE"; ga="#D4C4FF"; gb="#FFB3C8"; c=$none },
+  @{ f="coins.png";       o="04-coins.png";    l1="Earn coins";       l2="every day";        s="Finish habits to fill your coin jar";    t="#FFF4D6"; b="#FFE0EC"; ga="#FFD166"; gb="#FF9EBB"; c=$none },
+  @{ f="themes.png";      o="05-themes.png";   l1="Make it";          l2="all yours";        s="Outfits, free seasons & colour themes";  t="#DDF1FB"; b="#EDE4FF"; ga="#A8D8FF"; gb="#C4B0FF"; c=$none },
+  @{ f="shade_clean.png"; o="06-panel.png";    l1="Check in";         l2="with one swipe";   s="Health & habit countdown in your shade"; t="#EAE4FF"; b="#FFDDE9"; ga="#C4B0FF"; gb="#FF9EBB"; c=$panel },
+  @{ f="play.png";        o="07-play.png";     l1="Play with";        l2="your buddy";       s="Feed, pet, hug, sing and tickle";        t="#FFEBD9"; b="#FFD1DF"; ga="#FFD166"; gb="#FF85A2"; c=$none },
+  @{ f="stats.png";       o="08-stats.png";    l1="Track streaks,";   l2="earn titles";      s="Watch your progress grow every day";     t="#DFF7ED"; b="#E6DEFF"; ga="#A8E6CF"; gb="#C4B0FF"; c=$none }
 )
 foreach ($sl in $slides) {
   [Shots]::Render((Join-Path $RawDir $sl.f), (Join-Path $OutDir $sl.o), $sl.l1, $sl.l2, $sl.s, (C $sl.t), (C $sl.b), (C $sl.ga), (C $sl.gb), $black.Families[0], $xbold.Families[0], $sl.c)

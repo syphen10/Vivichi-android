@@ -101,13 +101,16 @@ fun EconomyBar(coins: Int, isPremium: Boolean, onCoins: () -> Unit, onPremium: (
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         CoinChip(coins, onClick = onCoins)
-        PremiumButton(isPremium, onClick = onPremium)
+        PremiumButton(isPremium, modifier = Modifier.pulsing(1.04f, 1400), onClick = onPremium)
     }
 }
 
 @Composable
 fun PremiumDialog(isPremium: Boolean, priceLabel: String?, onBuy: () -> Unit, onRestore: () -> Unit, onDismiss: () -> Unit) {
+    // Confetti only when Premium switches on while the dialog is open (i.e. a purchase just landed).
+    val wasPremium = remember { isPremium }
     Dialog(onDismissRequest = onDismiss) {
+      Box(contentAlignment = Alignment.Center) {
         Column(
             Modifier
                 .clip(RoundedCornerShape(28.dp))
@@ -123,7 +126,7 @@ fun PremiumDialog(isPremium: Boolean, priceLabel: String?, onBuy: () -> Unit, on
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     val pulse = rememberInfiniteTransition(label = "gem")
                     val s by pulse.animateFloat(1f, 1.12f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "s")
-                    EmojiGlyph(raw = "💎", size = 58.dp, modifier = Modifier.graphicsLayer { scaleX = s; scaleY = s })
+                    EmojiGlyph(raw = "💎", size = 58.dp, modifier = Modifier.graphicsLayer { scaleX = s; scaleY = s }.wiggling(6f, 1300))
                     Text("Vivichi Premium", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White, modifier = Modifier.padding(top = 8.dp))
                     Text(if (isPremium) "You're Premium — thank you! 💗" else "One-time unlock, yours forever", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.92f))
                 }
@@ -137,8 +140,8 @@ fun PremiumDialog(isPremium: Boolean, priceLabel: String?, onBuy: () -> Unit, on
                     "🌈" to "Exclusive themes & outfits",
                     "🪙" to "+25 bonus coins every day",
                     "📺" to "No ads, ever"
-                ).forEach { (emoji, text) ->
-                    Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                ).forEachIndexed { i, (emoji, text) ->
+                    Row(Modifier.padding(vertical = 6.dp).enterFromBelow(i + 1, distance = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(BgPink), contentAlignment = Alignment.Center) {
                             EmojiGlyph(raw = emoji, size = 20.dp)
                         }
@@ -156,6 +159,8 @@ fun PremiumDialog(isPremium: Boolean, priceLabel: String?, onBuy: () -> Unit, on
                 }
             }
         }
+        ConfettiBurst(trigger = if (isPremium && !wasPremium) true else null, modifier = Modifier.matchParentSize(), count = 100, colors = PremiumGradient + ConfettiColors)
+      }
     }
 }
 
@@ -207,6 +212,58 @@ fun BuyDialog(
     }
 }
 
+/** Celebration after spending coins: the item bursts in on a spinning sunburst with confetti. */
+@Composable
+fun UnlockedDialog(emoji: String, name: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        val appear = remember { Animatable(0f) }
+        LaunchedEffect(Unit) { appear.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 260f)) }
+        val spin = rememberInfiniteTransition(label = "rays")
+        val rot by spin.animateFloat(0f, 360f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "rot")
+        Box(contentAlignment = Alignment.Center) {
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Color.White)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Unlocked!", fontSize = 24.sp, fontWeight = FontWeight.Black, color = PinkDark, modifier = Modifier.pulsing(1.05f, 800))
+                Box(Modifier.size(170.dp), contentAlignment = Alignment.Center) {
+                    // Rotating sunburst rays behind the item.
+                    androidx.compose.foundation.Canvas(Modifier.fillMaxSize().graphicsLayer { rotationZ = rot; alpha = appear.value.coerceIn(0f, 1f) }) {
+                        val c = center
+                        val r = size.minDimension / 2
+                        for (i in 0 until 12) {
+                            val a0 = Math.toRadians((i * 30).toDouble())
+                            val a1 = Math.toRadians((i * 30 + 13).toDouble())
+                            val path = androidx.compose.ui.graphics.Path().apply {
+                                moveTo(c.x, c.y)
+                                lineTo(c.x + (r * kotlin.math.cos(a0)).toFloat(), c.y + (r * kotlin.math.sin(a0)).toFloat())
+                                lineTo(c.x + (r * kotlin.math.cos(a1)).toFloat(), c.y + (r * kotlin.math.sin(a1)).toFloat())
+                                close()
+                            }
+                            drawPath(path, Brush.radialGradient(listOf(Color(0xFFFFD166).copy(alpha = 0.55f), Color.Transparent), center = c, radius = r))
+                        }
+                    }
+                    EmojiGlyph(
+                        raw = emoji, size = 92.dp,
+                        modifier = Modifier.graphicsLayer {
+                            val s = appear.value
+                            scaleX = s; scaleY = s
+                            rotationZ = (1f - s) * -120f
+                        }.floating(5.dp, 1500)
+                    )
+                }
+                Text(name, fontSize = 20.sp, fontWeight = FontWeight.Black, color = TextDark)
+                Text("is yours to keep — and already equipped!", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp, bottom = 14.dp))
+                VivichiButton(text = "Yay!", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            }
+            ConfettiBurst(trigger = name, modifier = Modifier.matchParentSize(), count = 80, origin = androidx.compose.ui.geometry.Offset(0.5f, 0.4f))
+        }
+    }
+}
+
 /** Everything a "watch an ad" button needs. Null wherever ads don't apply (Premium users). */
 data class AdOffer(val adsLeft: Int, val ready: Boolean, val onWatch: () -> Unit)
 
@@ -244,9 +301,9 @@ fun CoinsDialog(coins: Int, isPremium: Boolean, ad: AdOffer?, onGetPremium: () -
             Modifier.clip(RoundedCornerShape(26.dp)).background(Color.White).padding(22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val spin = rememberInfiniteTransition(label = "coin")
-            val flip by spin.animateFloat(1f, -1f, infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "flip")
-            EmojiGlyph(raw = "🪙", size = 64.dp, modifier = Modifier.graphicsLayer { scaleX = flip })
+            // Bob + tilt rather than a full flip: a flip passes through zero width and the coin
+            // blinks out of existence every half second.
+            EmojiGlyph(raw = "🪙", size = 64.dp, modifier = Modifier.floating(6.dp, 1500).wiggling(9f, 1100))
             val shown by animateIntAsState(coins, tween(700), label = "bal")
             Text("$shown coins", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFFB7791F), modifier = Modifier.padding(top = 6.dp))
             Text("Spend them on buddies and themes in Style", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)

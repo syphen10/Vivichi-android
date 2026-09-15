@@ -4,7 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.vivichi.app.ui.components.bounceClick
+import com.vivichi.app.ui.components.enterFromBelow
+import com.vivichi.app.ui.components.wiggling
+import com.vivichi.app.ui.components.floating
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -42,21 +46,21 @@ fun CemeteryScreen(viewModel: VivichiViewModel) {
 
         if (state.cemetery.isEmpty()) {
             Column(Modifier.fillMaxSize().padding(40.dp, 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                EmojiGlyph(raw = "🌱", size = 48.dp)
+                EmojiGlyph(raw = "🌱", size = 48.dp, modifier = Modifier.wiggling(6f, 1400).floating(4.dp, 2000))
                 Spacer(Modifier.height(10.dp))
                 Text("No pets here yet", fontSize = 14.sp, fontWeight = FontWeight.Black)
                 Text("Keep your buddy healthy and they will never end up here!", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
             }
         } else {
             LazyColumn(Modifier.padding(13.dp)) {
-                items(state.cemetery, key = { it.id }) { entry ->
+                itemsIndexed(state.cemetery, key = { _, e -> e.id }) { index, entry ->
                     Row(
                         Modifier
                             .fillMaxWidth()
                             .padding(bottom = 11.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .enterFromBelow(index)
+                            .bounceClick(RoundedCornerShape(20.dp)) { SoundFx.click(); detail = entry }
                             .background(Color.White)
-                            .clickable { SoundFx.click(); detail = entry }
                             .padding(16.dp, 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

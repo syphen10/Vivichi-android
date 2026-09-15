@@ -25,6 +25,17 @@ import com.vivichi.app.data.DefaultContent
 import com.vivichi.app.data.PETS
 import com.vivichi.app.ui.VivichiViewModel
 import com.vivichi.app.ui.components.EmojiGlyph
+import com.vivichi.app.ui.components.FloatingSparkles
+import com.vivichi.app.ui.components.bounceClick
+import com.vivichi.app.ui.components.floating
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import com.vivichi.app.ui.dialogs.VivichiButton
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
@@ -44,6 +55,7 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
             .background(Brush.verticalGradient(listOf(Color(0xFFFFE2EE), Color(0xFFEDE4FF), Color(0xFFE2F0FF)))),
         contentAlignment = Alignment.TopCenter
     ) {
+        FloatingSparkles(color = Color(0xFFFF9CC0), count = 16, seed = 3)
         // safeDrawing = status bar + nav bar + cutout + keyboard, so content clears the system
         // bars under edge-to-edge and the name field isn't hidden by the keyboard.
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)) {
@@ -53,7 +65,7 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Black,
                 color = PinkDark,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().floating(amplitude = 4.dp, periodMs = 2200),
                 textAlign = TextAlign.Center
             )
             Text(
@@ -67,11 +79,12 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 repeat(5) { i ->
+                    val w by animateDpAsState(if (i == step) 24.dp else 8.dp, tween(350), label = "dot")
                     Box(
                         Modifier
                             .padding(3.dp)
                             .height(8.dp)
-                            .width(if (i == step) 24.dp else 8.dp)
+                            .width(w)
                             .background(if (i == step) Pink else MutedText, RoundedCornerShape(4.dp))
                     )
                 }
@@ -84,8 +97,16 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
                 elevation = CardDefaults.cardElevation(6.dp),
                 modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
             ) {
+                AnimatedContent(
+                    targetState = step,
+                    transitionSpec = {
+                        (slideInHorizontally(tween(320)) { it / 3 } + fadeIn(tween(260))) togetherWith
+                            (slideOutHorizontally(tween(260)) { -it / 3 } + fadeOut(tween(180)))
+                    },
+                    label = "step"
+                ) { current ->
                 Column(Modifier.padding(24.dp)) {
-                    when (step) {
+                    when (current) {
                         0 -> StepName(petName, { petName = it }) { if (petName.isNotBlank()) step = 1 }
                         1 -> StepSpecies(species, { species = it }) { step = 2 }
                         2 -> StepSchedule(times, enabled) { step = 3 }
@@ -104,6 +125,7 @@ fun OnboardingScreen(viewModel: VivichiViewModel) {
                             }
                         )
                     }
+                }
                 }
             }
         }

@@ -114,6 +114,7 @@ class MainActivity : ComponentActivity() {
         viewModel.checkMissedYou()
         // Picks up purchases completed elsewhere (e.g. a pending payment that just cleared).
         billing.refresh()
+        RewardedAds.preload(this)
     }
 
     override fun onDestroy() {

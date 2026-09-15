@@ -1,6 +1,7 @@
 package com.vivichi.app.ui.screens
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -41,6 +42,8 @@ import com.vivichi.app.ui.components.CharacterView
 import com.vivichi.app.ui.components.EmojiGlyph
 import com.vivichi.app.ui.components.PremiumGradient
 import com.vivichi.app.ui.components.rarityColor
+import com.vivichi.app.ui.components.enterFromBelow
+import com.vivichi.app.ui.components.bounceClick
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
 import java.time.LocalDate
@@ -61,6 +64,7 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
     val season = currentSeason()
     val context = LocalContext.current
     var pending by remember { mutableStateOf<Pending?>(null) }
+    var celebrate by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 14.dp)) {
         item {
@@ -79,7 +83,18 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CharacterView(species = state.pet.species, mood = GameLogic.mood(state), outfit = state.pet.outfit, health = state.pet.health, size = 130.dp)
+                com.vivichi.app.ui.components.FloatingSparkles(Modifier.matchParentSize(), color = Color.White, count = 10, seed = 13)
+                // Switching buddy or outfit pops the preview with a little spin.
+                androidx.compose.animation.AnimatedContent(
+                    targetState = state.pet.species to state.pet.outfit,
+                    transitionSpec = {
+                        (androidx.compose.animation.scaleIn(spring(dampingRatio = 0.45f, stiffness = 380f), initialScale = 0.5f) + androidx.compose.animation.fadeIn()) togetherWith
+                            (androidx.compose.animation.scaleOut(targetScale = 1.2f) + androidx.compose.animation.fadeOut(tween(120)))
+                    },
+                    label = "preview"
+                ) { (sp, outfit) ->
+                    CharacterView(species = sp, mood = GameLogic.mood(state), outfit = outfit, health = state.pet.health, size = 130.dp)
+                }
             }
         }
 
@@ -172,7 +187,7 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
             coins = state.coins,
             subtitle = "${p.p.rarity.label} buddy",
             onBuy = {
-                if (viewModel.buySpecies(p.p.id)) SoundFx.complete()
+                if (viewModel.buySpecies(p.p.id)) { SoundFx.complete(); celebrate = p.p.emoji to p.p.name }
                 pending = null
             },
             onGetPremium = { pending = null; onOpenPremium() },
@@ -186,7 +201,7 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
             coins = state.coins,
             subtitle = "Colour theme",
             onBuy = {
-                if (viewModel.buyWearable(p.o.id)) SoundFx.complete()
+                if (viewModel.buyWearable(p.o.id)) { SoundFx.complete(); celebrate = p.o.emoji to p.o.name }
                 pending = null
             },
             onGetPremium = { pending = null; onOpenPremium() },
@@ -194,6 +209,9 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
             ad = adOffer
         )
         null -> Unit
+    }
+    celebrate?.let { (emoji, name) ->
+        com.vivichi.app.ui.components.UnlockedDialog(emoji = emoji, name = name, onDismiss = { celebrate = null })
     }
 }
 
@@ -210,9 +228,11 @@ private fun SectionHeader(title: String, sub: String) {
 @Composable
 private fun <T> ChunkedGrid(items: List<T>, columns: Int = 3, cell: @Composable (T) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.chunked(columns).forEach { row ->
+        items.chunked(columns).forEachIndexed { r, row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { Box(Modifier.weight(1f)) { cell(it) } }
+                row.forEachIndexed { c, item ->
+                    Box(Modifier.weight(1f).enterFromBelow(r * 2 + c, distance = 18.dp)) { cell(item) }
+                }
                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
@@ -230,10 +250,9 @@ private fun BuddyCard(pet: PetSpecies, owned: Boolean, selected: Boolean, onClic
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
+                .bounceClick(RoundedCornerShape(18.dp), pressedScale = 0.92f) { SoundFx.click(); onClick() }
                 .background(if (selected) Color(0xFFFFF0F5) else Color.White)
                 .border(2.dp, border, RoundedCornerShape(18.dp))
-                .clickable { SoundFx.click(); onClick() }
                 .padding(top = 12.dp, bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -320,10 +339,9 @@ private fun WearCard(
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
+                .bounceClick(RoundedCornerShape(18.dp), pressedScale = 0.92f) { SoundFx.click(); onClick() }
                 .background(Color.White)
                 .border(2.dp, border, RoundedCornerShape(18.dp))
-                .clickable { SoundFx.click(); onClick() }
                 .padding(vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

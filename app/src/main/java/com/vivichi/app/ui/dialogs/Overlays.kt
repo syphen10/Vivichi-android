@@ -19,6 +19,17 @@ import com.vivichi.app.data.CemeteryEntry
 import com.vivichi.app.data.petEmoji
 import com.vivichi.app.ui.components.CharacterView
 import com.vivichi.app.ui.components.EmojiGlyph
+import com.vivichi.app.ui.components.ConfettiBurst
+import com.vivichi.app.ui.components.floating
+import com.vivichi.app.ui.components.pulsing
+import com.vivichi.app.ui.components.wiggling
+import com.vivichi.app.ui.components.enterFromBelow
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import com.vivichi.app.domain.Mood
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
@@ -32,7 +43,8 @@ fun DeathScreen(entry: CemeteryEntry, onNewBuddy: () -> Unit) {
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        com.vivichi.app.ui.components.FloatingSparkles(color = Color.White.copy(alpha = 0.5f), count = 18, seed = 99)
+        Column(Modifier.enterFromBelow(0, distance = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             CharacterView(species = entry.species, mood = Mood.SAD, outfit = entry.outfit, health = 0, size = 120.dp)
             Spacer(Modifier.height(16.dp))
             Text("${entry.name} has passed away", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
@@ -84,7 +96,7 @@ fun MissedYouOverlay(days: Int, petName: String, species: String, streak: Int, o
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            EmojiGlyph(raw = petEmoji(species), size = 70.dp)
+            EmojiGlyph(raw = petEmoji(species), size = 70.dp, modifier = Modifier.enterFromBelow(0).floating(6.dp, 1600))
             Spacer(Modifier.height(12.dp))
             Text(
                 (if (days >= 7) "Where have you been?! " else "") + "$petName missed you!",
@@ -114,24 +126,40 @@ fun MissedYouOverlay(days: Int, petName: String, species: String, streak: Int, o
 @Composable
 fun LevelUpDialog(level: Int, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            Modifier
-                .clip(RoundedCornerShape(26.dp))
-                .background(Color.White)
-                .padding(38.dp, 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                EmojiGlyph(raw = "🌟", size = 30.dp)
-                EmojiGlyph(raw = "✨", size = 30.dp)
-                EmojiGlyph(raw = "🌟", size = 30.dp)
+        // Card springs in from small, stars pop in one by one, and confetti bursts over it all.
+        val appear = remember { Animatable(0.6f) }
+        LaunchedEffect(Unit) { appear.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f)) }
+        Box(contentAlignment = Alignment.Center) {
+            Column(
+                Modifier
+                    .graphicsLayer { scaleX = appear.value; scaleY = appear.value; alpha = ((appear.value - 0.6f) / 0.4f).coerceIn(0f, 1f) }
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFF4FA), Color.White)))
+                    .padding(38.dp, 30.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                    listOf("🌟" to 30.dp, "✨" to 40.dp, "🌟" to 30.dp).forEachIndexed { i, (emoji, size) ->
+                        val pop = remember { Animatable(0f) }
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(200L + i * 140L)
+                            pop.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = 350f))
+                        }
+                        EmojiGlyph(
+                            raw = emoji, size = size,
+                            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value; rotationZ = (1f - pop.value) * -90f }
+                                .then(if (i == 1) Modifier.wiggling(12f, 900) else Modifier)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text("Level $level!", fontSize = 26.sp, fontWeight = FontWeight.Black, color = PinkDark, modifier = Modifier.pulsing(1.06f, 800))
+                Spacer(Modifier.height(4.dp))
+                Text("You are on fire!", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(14.dp))
+                VivichiButton(text = "Awesome!", onClick = onDismiss)
             }
-            Spacer(Modifier.height(6.dp))
-            Text("Level $level!", fontSize = 23.sp, fontWeight = FontWeight.Black, color = PinkDark)
-            Spacer(Modifier.height(4.dp))
-            Text("You are on fire!", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(14.dp))
-            VivichiButton(text = "Awesome!", onClick = onDismiss)
+            ConfettiBurst(trigger = level, modifier = Modifier.matchParentSize().padding(0.dp), count = 90, origin = Offset(0.5f, 0.3f))
         }
     }
 }
@@ -156,7 +184,10 @@ fun BoxScope.XpToast(xp: Int, intensity: String, coins: Int = 0) {
     Row(
         Modifier
             .align(Alignment.Center)
-            .background(Brush.horizontalGradient(listOf(PurpleDark, Pink)), RoundedCornerShape(18.dp))
+            .background(
+                Brush.horizontalGradient(if (xp > 0) listOf(PurpleDark, Pink) else listOf(Color(0xFFFFB020), Color(0xFFFF8A3D))),
+                RoundedCornerShape(18.dp)
+            )
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

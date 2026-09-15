@@ -5,6 +5,18 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.text.TextStyle
+import com.vivichi.app.ui.components.CountUpText
+import com.vivichi.app.ui.components.FloatingSparkles
+import com.vivichi.app.ui.components.bounceClick
+import com.vivichi.app.ui.components.enterFromBelow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,38 +54,34 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
 
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            Column(
+            Box(
                 Modifier
+                    .padding(horizontal = 13.dp)
+                    .padding(top = 8.dp)
                     .fillMaxWidth()
-                    .background(Brush.horizontalGradient(listOf(Pink, PurpleDark)), RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
-                    .padding(16.dp, 22.dp, 16.dp, 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(Brush.linearGradient(listOf(Pink, PurpleDark)))
             ) {
-                Text(
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())),
-                    color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold
-                )
-                Text("Today's Goals", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(vertical = 3.dp))
-                Box(
-                    Modifier
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .border(6.dp, Color.White.copy(alpha = 0.9f), RoundedCornerShape(50)),
-                    contentAlignment = Alignment.Center
+                FloatingSparkles(Modifier.matchParentSize(), color = Color.White, count = 14, seed = 11)
+                Column(
+                    Modifier.fillMaxWidth().padding(16.dp, 18.dp, 16.dp, 18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("$pct%", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
-                        Text("done", color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    }
+                    Text(
+                        LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())),
+                        color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold
+                    )
+                    Text("Today's Goals", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(vertical = 3.dp))
+                    ProgressRing(pct)
                 }
             }
         }
 
         item { SectionLabel("Active", Modifier.padding(top = 14.dp, bottom = 6.dp)) }
-        items(active, key = { it.id }) { habit ->
+        itemsIndexed(active, key = { _, h -> h.id }) { index, habit ->
             HabitRowWithActions(
                 habit = habit,
+                index = index,
                 status = GameLogic.habitStatus(state, habit),
                 onComplete = { viewModel.completeHabit(habit.id) },
                 onEdit = { editHabit = habit }
@@ -109,11 +117,15 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
         }
 
         item {
-            OutlinedButton(
-                onClick = { SoundFx.click(); showAdd = true },
-                modifier = Modifier.padding(13.dp, 12.dp, 13.dp, 24.dp).fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                border = androidx.compose.foundation.BorderStroke(2.dp, BorderPink)
+            Box(
+                Modifier
+                    .padding(13.dp, 12.dp, 13.dp, 24.dp)
+                    .fillMaxWidth()
+                    .bounceClick(RoundedCornerShape(18.dp)) { SoundFx.click(); showAdd = true }
+                    .border(2.dp, BorderPink, RoundedCornerShape(18.dp))
+                    .background(Color.White.copy(alpha = 0.6f))
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center
             ) { Text("+ Add custom habit", color = Pink, fontWeight = FontWeight.Black) }
         }
     }
@@ -158,6 +170,28 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
     }
 }
 
+/** Ring that sweeps round to today's completion, with the number rolling up alongside it. */
+@Composable
+private fun ProgressRing(pct: Int) {
+    var target by remember { mutableStateOf(0f) }
+    LaunchedEffect(pct) { target = pct / 100f }
+    val sweep by animateFloatAsState(target, tween(1100, easing = FastOutSlowInEasing), label = "ring")
+    Box(Modifier.size(86.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = 8.dp.toPx()
+            val inset = stroke / 2
+            val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
+            val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
+            drawArc(Color.White.copy(alpha = 0.25f), 0f, 360f, false, topLeft, arcSize, style = Stroke(stroke))
+            drawArc(Color.White, -90f, 360f * sweep, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CountUpText(pct, TextStyle(color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black), suffix = "%")
+            Text("done", color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
 private data class PendingHabit(val name: String, val icon: String, val xp: Int, val time: String)
 
 @Composable
@@ -170,11 +204,11 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HabitRowWithActions(habit: Habit, status: HabitStatus, onComplete: () -> Unit, onEdit: () -> Unit) {
+private fun HabitRowWithActions(habit: Habit, status: HabitStatus, index: Int, onComplete: () -> Unit, onEdit: () -> Unit) {
     HabitCard(
         habit = habit,
         status = status,
-        modifier = Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp),
+        modifier = Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp).enterFromBelow(index + 1),
         onEdit = onEdit,
         onClick = onComplete
     )
