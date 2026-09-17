@@ -68,9 +68,16 @@ object RewardedAds {
         UserMessagingPlatform.showPrivacyOptionsForm(activity) { _ -> }
     }
 
+    private val _sdkReady = MutableStateFlow(false)
+    /** True once consent allows ads and the SDK has initialised — banners wait for this too. */
+    val sdkReady: StateFlow<Boolean> = _sdkReady.asStateFlow()
+
     private fun startSdk(context: Context) {
         if (!sdkStarted.compareAndSet(false, true)) return
-        MobileAds.initialize(context) { load(context) }
+        MobileAds.initialize(context) {
+            _sdkReady.value = true
+            load(context)
+        }
     }
 
     private fun load(context: Context) {

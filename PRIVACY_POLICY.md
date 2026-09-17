@@ -1,6 +1,6 @@
 # Privacy Policy for Vivichi
 
-**Last updated:** September 15, 2026
+**Last updated:** September 17, 2026
 
 Vivichi ("the app") is developed by Syphen. This privacy policy explains what information the app handles, what is shared with third parties, and the choices you have.
 
@@ -12,7 +12,9 @@ If you uninstall the app, this data is permanently deleted from your device.
 
 ## Advertising (Google AdMob)
 
-Vivichi offers **optional rewarded ads**. You can choose to watch a short video ad in exchange for in-app coins. Ads are never shown unless you tap to watch one, and they are never shown to Premium users.
+Vivichi shows two kinds of ads, and **no ads at all to Premium users**:
+- a **banner ad** at the bottom of the screen, above the navigation bar;
+- **optional rewarded ads**: you can choose to watch a short video ad in exchange for in-app coins. These only play when you tap to watch one.
 
 Ads are provided by **Google AdMob**. To serve and measure ads and to prevent fraud, Google may collect and process information from your device, including:
 - your device's **advertising ID**
@@ -25,7 +27,7 @@ This information is collected by Google, not by the developer, and is handled un
 **Your choices:**
 - If you are in the European Economic Area, the UK or Switzerland, Vivichi asks for your consent before ads may be personalised, using Google's consent form. You can change your choice at any time in the app under **More → Ad privacy choices**.
 - You can reset or delete your advertising ID, or opt out of personalised ads, in your phone's settings (**Settings → Google → Ads**, or **Settings → Privacy → Ads** depending on your device).
-- You never have to watch ads. You can earn coins by completing habits instead.
+- You never have to watch rewarded ads — you can earn coins by completing habits instead. Vivichi Premium removes all ads, including the banner.
 
 ## In-App Purchases (Google Play)
 
@@ -40,7 +42,7 @@ If you turn on the optional **pet status panel**, Vivichi shows an ongoing notif
 ## Permissions
 
 The app requests the following permissions, used only for their stated purpose:
-- **Internet and network state:** used only to load rewarded ads and to communicate with Google Play for purchases. Your habit and pet data is never sent over the internet.
+- **Internet and network state:** used only to load ads and to communicate with Google Play for purchases. Your habit and pet data is never sent over the internet.
 - **Notifications:** to show habit reminders and the optional pet status panel.
 - **Alarms & reminders (exact alarms):** to deliver habit reminders on time. Without it, reminders still work but may arrive a little late.
 - **Run at startup (boot completed):** to re-enable your scheduled reminders after your phone restarts.

@@ -27,8 +27,8 @@ android {
         applicationId = "com.vivichi.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.2.1"
+        versionCode = 8
+        versionName = "1.3.0"
         vectorDrawables.useSupportLibrary = true
 
         // AdMob IDs live in gradle.properties so real ones can be swapped in without touching
@@ -36,7 +36,9 @@ android {
         val admobAppId = (project.findProperty("vivichi.admobAppId") as String?) ?: "ca-app-pub-3940256099942544~3347511713"
         val rewardedUnit = (project.findProperty("vivichi.rewardedUnitId") as String?) ?: "ca-app-pub-3940256099942544/5224354917"
         manifestPlaceholders["admobAppId"] = admobAppId
+        val bannerUnit = (project.findProperty("vivichi.bannerUnitId") as String?) ?: "ca-app-pub-3940256099942544/9214589741"
         buildConfigField("String", "REWARDED_UNIT_ID", "\"$rewardedUnit\"")
+        buildConfigField("String", "BANNER_UNIT_ID", "\"$bannerUnit\"")
         buildConfigField("String", "PREMIUM_PRODUCT_ID", "\"vivichi_premium\"")
     }
 
@@ -64,6 +66,7 @@ android {
             // Debug builds always use test ads, even once real IDs are configured — clicking
             // your own live ads can get the AdMob account suspended.
             buildConfigField("String", "REWARDED_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
+            buildConfigField("String", "BANNER_UNIT_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
         }
     }
 

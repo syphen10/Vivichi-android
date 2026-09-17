@@ -82,7 +82,14 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
                         onPremium = { showPremium = true }
                     )
                 },
-                bottomBar = { VivichiBottomBar(tab) { tab = it } }
+                bottomBar = {
+                    Column {
+                        // Banner lives outside the tab content, so it survives tab switches
+                        // (one ad view, not a reload per tab). Premium removes it entirely.
+                        if (!state.premium) com.vivichi.app.monetize.BottomBannerAd()
+                        VivichiBottomBar(tab) { tab = it }
+                    }
+                }
             ) { padding ->
                 Box(Modifier.padding(padding).fillMaxSize()) {
                     AnimatedContent(
