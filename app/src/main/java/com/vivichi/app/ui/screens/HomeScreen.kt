@@ -217,6 +217,7 @@ fun HomeScreen(viewModel: VivichiViewModel, onNavigateHabits: () -> Unit) {
                 HabitCard(
                     habit = habit,
                     status = GameLogic.habitStatus(state, habit),
+                    use24h = state.use24h,
                     modifier = Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp).enterFromBelow(4 + index)
                 ) {
                     viewModel.completeHabit(habit.id)
@@ -237,6 +238,7 @@ fun HabitCard(
     status: HabitStatus,
     modifier: Modifier = Modifier,
     onEdit: (() -> Unit)? = null,
+    use24h: Boolean = false,
     onClick: () -> Unit
 ) {
     val done = status == HabitStatus.DONE
@@ -275,8 +277,8 @@ fun HabitCard(
             val intLbl = when (habit.intensity) { "medium" -> "Medium"; "high" -> "High"; else -> "Low" }
             val sub = when {
                 done -> "Completed"
-                expired -> "Missed — resets tomorrow at ${habit.time}"
-                else -> "+${habit.xp} XP | $intLbl | ${habit.time}"
+                expired -> "Missed — resets tomorrow at ${com.vivichi.app.util.formatHabitTime(habit.time, use24h)}"
+                else -> "+${habit.xp} XP | $intLbl | ${com.vivichi.app.util.formatHabitTime(habit.time, use24h)}"
             }
             Text(sub, fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
         }

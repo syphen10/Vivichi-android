@@ -33,6 +33,19 @@ object GameLogic {
     const val MAX_ADS_PER_DAY = 5
     const val PREMIUM_DAILY_BONUS = 25
 
+    // Anti-farming: without these, adding a pile of custom habits and ticking them off would
+    // print unlimited coins. Default habits earn ~68/day, so normal play never hits the cap.
+    const val MAX_HABIT_COINS_PER_DAY = 80
+    const val MIN_HABITS_FOR_BONUS = 3
+
+    /** Coins still available from habits today. */
+    fun habitCoinsLeftToday(state: AppState): Int =
+        if (state.habitCoinsDate != today()) MAX_HABIT_COINS_PER_DAY
+        else (MAX_HABIT_COINS_PER_DAY - state.habitCoinsToday).coerceAtLeast(0)
+
+    /** A habit added today gives XP but no coins until tomorrow (stops add → tick → delete loops). */
+    fun habitEarnsCoinsToday(habit: Habit): Boolean = habit.createdOn != today()
+
     fun coinsForHabit(habit: Habit): Int = when (habit.intensity) {
         "high" -> 15
         "medium" -> 8
@@ -219,7 +232,10 @@ object GameLogic {
             health = minOf(100, health + 5)
         }
 
-        val coinsGained = coinsForHabit(habit) + if (allDoneNow) COINS_ALL_DONE_BONUS else 0
+        val baseCoins = if (habitEarnsCoinsToday(habit)) coinsForHabit(habit) else 0
+        val bonusCoins = if (allDoneNow && enabled.size >= MIN_HABITS_FOR_BONUS) COINS_ALL_DONE_BONUS else 0
+        val coinsGained = (baseCoins + bonusCoins).coerceAtMost(habitCoinsLeftToday(state))
+        val habitCoinsToday = (if (state.habitCoinsDate == today()) state.habitCoinsToday else 0) + coinsGained
 
         val newState = state.copy(
             pet = state.pet.copy(level = level, xp = xp, health = health),
@@ -229,7 +245,9 @@ object GameLogic {
             bestStreak = bestStreak,
             achievements = achievements,
             todayLog = state.todayLog.copy(completed = completed),
-            coins = state.coins + coinsGained
+            coins = state.coins + coinsGained,
+            habitCoinsDate = today(),
+            habitCoinsToday = habitCoinsToday
         )
         return HabitAttemptResult(newState, true, false, 0, habit.xp, leveledUp, allDoneNow, coinsGained)
     }

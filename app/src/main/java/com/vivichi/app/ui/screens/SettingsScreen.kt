@@ -195,7 +195,7 @@ fun SettingsScreen(
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(h.name, fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                    Text("+${h.xp} XP · ${h.time}${if (h.custom) " · Custom" else ""}", fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold)
+                    Text("+${h.xp} XP · ${com.vivichi.app.util.formatHabitTime(h.time, state.use24h)}${if (h.custom) " · Custom" else ""}", fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold)
                 }
                 if (h.custom) {
                     IconButton(onClick = { SoundFx.click(); viewModel.deleteHabit(h.id) }) {
@@ -205,6 +205,32 @@ fun SettingsScreen(
                 Switch(
                     checked = h.enabled,
                     onCheckedChange = { SoundFx.click(); viewModel.toggleHabit(h.id, it) },
+                    colors = SwitchDefaults.colors(checkedTrackColor = Pink)
+                )
+            }
+        }
+
+        item { SettingsLabel("Clock") }
+        item {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .padding(13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("24-hour clock", fontSize = 13.sp, fontWeight = FontWeight.Black)
+                    Text(
+                        if (state.use24h) "Times show like 13:00" else "Times show like 1:00 PM",
+                        fontSize = 10.sp, color = SoftText, fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Switch(
+                    checked = state.use24h,
+                    onCheckedChange = { SoundFx.click(); viewModel.setUse24h(it) },
                     colors = SwitchDefaults.colors(checkedTrackColor = Pink)
                 )
             }

@@ -339,7 +339,12 @@ fun CoinsDialog(coins: Int, isPremium: Boolean, ad: AdOffer?, onGetPremium: () -
             }
 
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(BgPink).padding(horizontal = 14.dp, vertical = 10.dp)) {
-                Text("Ways to earn", fontSize = 12.sp, fontWeight = FontWeight.Black, color = TextDark, modifier = Modifier.padding(bottom = 4.dp))
+                Text("Ways to earn", fontSize = 12.sp, fontWeight = FontWeight.Black, color = TextDark)
+                Text(
+                    "Habits pay up to ${com.vivichi.app.domain.GameLogic.MAX_HABIT_COINS_PER_DAY} coins a day. New habits start paying the day after you add them.",
+                    fontSize = 10.sp, color = SoftText, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+                )
                 listOf(
                     "✅" to "Easy habit" to "+5",
                     "💪" to "Medium habit" to "+8",

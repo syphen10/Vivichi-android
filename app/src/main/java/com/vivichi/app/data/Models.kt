@@ -11,7 +11,9 @@ data class Habit(
     val intensity: String, // low | medium | high
     val time: String, // "HH:mm"
     val enabled: Boolean = true,
-    val custom: Boolean = false
+    val custom: Boolean = false,
+    /** ISO date the habit was added. Habits created today earn XP but no coins until tomorrow. */
+    val createdOn: String? = null
 )
 
 @Serializable
@@ -82,7 +84,12 @@ data class AppState(
     val premium: Boolean = false,
     val lastPremiumBonus: String? = null,
     val adsDate: String? = null,
-    val adsWatchedToday: Int = 0
+    val adsWatchedToday: Int = 0,
+    /** Coins earned from habits on [habitCoinsDate]; capped per day (anti-farming). */
+    val habitCoinsDate: String? = null,
+    val habitCoinsToday: Int = 0,
+    /** false = 12-hour clock with AM/PM (default), true = 24-hour. */
+    val use24h: Boolean = false
 )
 
 /**

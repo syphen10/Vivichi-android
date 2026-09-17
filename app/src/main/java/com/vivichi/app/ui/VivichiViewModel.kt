@@ -142,6 +142,11 @@ class VivichiViewModel(
         return true
     }
 
+    fun setUse24h(enabled: Boolean) {
+        _state.value = _state.value.copy(use24h = enabled)
+        persist()
+    }
+
     fun setStatusPanel(enabled: Boolean) {
         _state.value = _state.value.copy(statusPanel = enabled)
         persist()
@@ -256,7 +261,7 @@ class VivichiViewModel(
             val idx = habits.indexOfFirst { it.id == id }
             if (idx >= 0) habits[idx] = habits[idx].copy(name = name, icon = icon, xp = xp, intensity = intensity, time = time, enabled = true)
         } else {
-            habits.add(Habit("c${System.currentTimeMillis()}", name, icon, xp, intensity, time, true, true))
+            habits.add(Habit("c${System.currentTimeMillis()}", name, icon, xp, intensity, time, true, true, createdOn = GameLogic.today()))
         }
         _state.value = _state.value.copy(habits = habits)
         persist()
@@ -266,7 +271,7 @@ class VivichiViewModel(
 
     fun forceAddHabit(name: String, icon: String, xp: Int, time: String) {
         val intensity = when (xp) { 3 -> "low"; 5 -> "medium"; else -> "high" }
-        val habits = _state.value.habits + Habit("c${System.currentTimeMillis()}", name, icon, xp, intensity, time, true, true)
+        val habits = _state.value.habits + Habit("c${System.currentTimeMillis()}", name, icon, xp, intensity, time, true, true, createdOn = GameLogic.today())
         _state.value = _state.value.copy(habits = habits)
         persist()
         scheduler?.rescheduleAll(_state.value)

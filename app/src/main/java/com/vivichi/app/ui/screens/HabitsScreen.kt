@@ -82,6 +82,7 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
             HabitRowWithActions(
                 habit = habit,
                 index = index,
+                use24h = state.use24h,
                 status = GameLogic.habitStatus(state, habit),
                 onComplete = { viewModel.completeHabit(habit.id) },
                 onEdit = { editHabit = habit }
@@ -139,6 +140,7 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
                 if (!ok) pendingExpiredAdd = PendingHabit(name, icon, xp, time)
                 showAdd = false
             }
+            , use24h = state.use24h
         )
     }
     editHabit?.let { h ->
@@ -149,13 +151,14 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
                 viewModel.addOrUpdateHabit(h.id, name, icon, xp, time)
                 editHabit = null
             }
+            , use24h = state.use24h
         )
     }
     pendingExpiredAdd?.let { pending ->
         AlertDialog(
             onDismissRequest = { pendingExpiredAdd = null },
             title = { Text("This time has passed!", fontWeight = FontWeight.Black) },
-            text = { Text("${pending.name} at ${pending.time} already expired today. It will unlock next tomorrow.", fontSize = 13.sp) },
+            text = { Text("${pending.name} at ${com.vivichi.app.util.formatHabitTime(pending.time, state.use24h)} already expired today. It will unlock next tomorrow.", fontSize = 13.sp) },
             confirmButton = {
                 TextButton(onClick = {
                     SoundFx.click()
@@ -204,12 +207,13 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HabitRowWithActions(habit: Habit, status: HabitStatus, index: Int, onComplete: () -> Unit, onEdit: () -> Unit) {
+private fun HabitRowWithActions(habit: Habit, status: HabitStatus, index: Int, use24h: Boolean, onComplete: () -> Unit, onEdit: () -> Unit) {
     HabitCard(
         habit = habit,
         status = status,
         modifier = Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp).enterFromBelow(index + 1),
         onEdit = onEdit,
+        use24h = use24h,
         onClick = onComplete
     )
 }

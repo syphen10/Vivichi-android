@@ -203,7 +203,7 @@ private fun StepSchedule(times: MutableMap<String, String>, enabled: MutableMap<
             ) {
                 EmojiGlyph(raw = h.icon, size = 16.dp)
                 Text(h.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text(times[h.id] ?: h.time, fontSize = 12.sp, fontWeight = FontWeight.Black, color = SoftText)
+                Text(com.vivichi.app.util.formatHabitTime(times[h.id] ?: h.time, false), fontSize = 12.sp, fontWeight = FontWeight.Black, color = SoftText)
                 Switch(
                     checked = enabled[h.id] ?: h.enabled,
                     onCheckedChange = { SoundFx.click(); enabled[h.id] = it },

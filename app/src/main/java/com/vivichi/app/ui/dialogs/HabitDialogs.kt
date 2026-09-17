@@ -27,6 +27,7 @@ import com.vivichi.app.data.Habit
 import com.vivichi.app.ui.components.EmojiGlyph
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
+import com.vivichi.app.util.formatHabitTime
 
 private val COMMON_EMOJIS = listOf(
     "🪥","💧","🍳","🥗","📚","🏃","📖","😴","🎵","🧘","💧","🧴","🍎","🐾","🎨","🎯","🎮","🎵","🎹","🧹","🌿","📓","📝","⏰","🐱","🐻","🎨","💼","🥤","🍵","😴","🧠","❤️","⭐","✅","🔥","💪","📷","🌸","🌿","☀️","⚡","🎯","💊","📞","📅","☕","🪴","🐾","🎵","☕","🚿","🧴","📖","🎧","🍎","🥳","🥰","😄","🤩","😎","🎺","🎸","🎹","🎤","🔥","🎁"
@@ -36,7 +37,8 @@ private val COMMON_EMOJIS = listOf(
 fun AddEditHabitDialog(
     existing: Habit?,
     onDismiss: () -> Unit,
-    onSave: (name: String, icon: String, xp: Int, time: String) -> Unit
+    onSave: (name: String, icon: String, xp: Int, time: String) -> Unit,
+    use24h: Boolean = false
 ) {
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var icon by remember { mutableStateOf(existing?.icon ?: "✨") }
@@ -86,7 +88,7 @@ fun AddEditHabitDialog(
                         onClick = { SoundFx.click(); showTimePicker = true },
                         shape = RoundedCornerShape(18.dp),
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text(time, fontWeight = FontWeight.Bold) }
+                    ) { Text(formatHabitTime(time, use24h), fontWeight = FontWeight.Bold) }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -96,6 +98,13 @@ fun AddEditHabitDialog(
                 IntensityChip("3 XP", "Low", xp == 3, Modifier.weight(1f)) { SoundFx.click(); xp = 3 }
                 IntensityChip("5 XP", "Medium", xp == 5, Modifier.weight(1f)) { SoundFx.click(); xp = 5 }
                 IntensityChip("10 XP", "High", xp == 10, Modifier.weight(1f)) { SoundFx.click(); xp = 10 }
+            }
+            if (existing == null) {
+                Text(
+                    "New habits give XP right away and start earning coins tomorrow.",
+                    fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
             }
             Spacer(Modifier.height(16.dp))
 
@@ -111,7 +120,7 @@ fun AddEditHabitDialog(
         EmojiPickerDialog(onPick = { icon = it; showEmojiPicker = false }, onDismiss = { showEmojiPicker = false })
     }
     if (showTimePicker) {
-        TimePickerDialog(initial = time, onPick = { time = it; showTimePicker = false }, onDismiss = { showTimePicker = false })
+        TimePickerDialog(initial = time, use24h = use24h, onPick = { time = it; showTimePicker = false }, onDismiss = { showTimePicker = false })
     }
 }
 
@@ -156,11 +165,11 @@ private fun EmojiPickerDialog(onPick: (String) -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun TimePickerDialog(initial: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+private fun TimePickerDialog(initial: String, use24h: Boolean = false, onPick: (String) -> Unit, onDismiss: () -> Unit) {
     val parts = initial.split(":")
     var hour by remember { mutableIntStateOf(parts.getOrNull(0)?.toIntOrNull() ?: 9) }
     var minute by remember { mutableIntStateOf(parts.getOrNull(1)?.toIntOrNull() ?: 0) }
-    val state = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = true)
+    val state = rememberTimePickerState(initialHour = hour, initialMinute = minute, is24Hour = use24h)
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier.clip(RoundedCornerShape(20.dp)).background(Color.White).padding(20.dp),
@@ -178,7 +187,7 @@ private fun TimePickerDialog(initial: String, onPick: (String) -> Unit, onDismis
 }
 
 @Composable
-fun EditTimesDialog(habits: List<Habit>, onDismiss: () -> Unit, onSave: (Map<String, String>) -> Unit) {
+fun EditTimesDialog(habits: List<Habit>, onDismiss: () -> Unit, onSave: (Map<String, String>) -> Unit, use24h: Boolean = false) {
     val times = remember { mutableStateMapOf<String, String>().apply { habits.forEach { put(it.id, it.time) } } }
     var editingId by remember { mutableStateOf<String?>(null) }
 
@@ -208,7 +217,7 @@ fun EditTimesDialog(habits: List<Habit>, onDismiss: () -> Unit, onSave: (Map<Str
                         EmojiGlyph(raw = h.icon, size = 16.dp)
                         Text(h.name, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
                         OutlinedButton(onClick = { SoundFx.click(); editingId = h.id }, shape = RoundedCornerShape(10.dp)) {
-                            Text(times[h.id] ?: h.time, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                            Text(formatHabitTime(times[h.id] ?: h.time, use24h), fontSize = 12.sp, fontWeight = FontWeight.Black)
                         }
                     }
                 }
@@ -219,6 +228,6 @@ fun EditTimesDialog(habits: List<Habit>, onDismiss: () -> Unit, onSave: (Map<Str
     }
 
     editingId?.let { id ->
-        TimePickerDialog(initial = times[id] ?: "09:00", onPick = { times[id] = it; editingId = null }, onDismiss = { editingId = null })
+        TimePickerDialog(initial = times[id] ?: "09:00", use24h = use24h, onPick = { times[id] = it; editingId = null }, onDismiss = { editingId = null })
     }
 }
