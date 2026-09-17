@@ -13,7 +13,9 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.TextStyle
-import com.vivichi.app.ui.components.CountUpText
+import com.vivichi.app.ui.components.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.alpha
 import com.vivichi.app.ui.components.FloatingSparkles
 import com.vivichi.app.ui.components.bounceClick
 import com.vivichi.app.ui.components.enterFromBelow
@@ -52,82 +54,102 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
     val active = state.habits.filter { it.enabled }.sortedBy { order[GameLogic.habitStatus(state, it)] ?: 9 }
     val inactive = state.habits.filterNot { it.enabled }
 
-    LazyColumn(Modifier.fillMaxSize()) {
-        item {
-            Box(
-                Modifier
-                    .padding(horizontal = 13.dp)
-                    .padding(top = 8.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(Brush.linearGradient(listOf(Pink, PurpleDark)))
-            ) {
-                FloatingSparkles(Modifier.matchParentSize(), color = Color.White, count = 14, seed = 11)
-                Column(
-                    Modifier.fillMaxWidth().padding(16.dp, 18.dp, 16.dp, 18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())),
-                        color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold
-                    )
-                    Text("Today's Goals", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(vertical = 3.dp))
-                    ProgressRing(pct)
-                }
-            }
-        }
+    val (doneCount, leftCount, missedCount) = rememberTodayCounts(state)
+    val todo = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.AVAILABLE }
+    val missed = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.EXPIRED }
+    val done = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.DONE }
 
-        item { SectionLabel("Active", Modifier.padding(top = 14.dp, bottom = 6.dp)) }
-        itemsIndexed(active, key = { _, h -> h.id }) { index, habit ->
-            HabitRowWithActions(
-                habit = habit,
-                index = index,
-                use24h = state.use24h,
-                status = GameLogic.habitStatus(state, habit),
-                onComplete = { viewModel.completeHabit(habit.id) },
-                onEdit = { editHabit = habit }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
+        item {
+            PageHeader(
+                title = "Today's goals",
+                subtitle = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())),
+                emoji = "✅",
+                accent = listOf(Pink, PurpleDark),
+                stats = listOf(
+                    HeaderStat("$doneCount", "Done", GreenDark),
+                    HeaderStat("$leftCount", "To do", Orange),
+                    HeaderStat("$missedCount", "Missed", Red)
+                ),
+                trailing = { ProgressRing(pct) }
             )
         }
 
+        var index = 0
+        fun section(title: String, emoji: String, habits: List<Habit>) {
+            if (habits.isEmpty()) return
+            item(key = "h_$title") { SectionTitle(title, emoji, trailing = "${habits.size}") }
+            habits.forEach { habit ->
+                val i = index++
+                item(key = habit.id) {
+                    HabitRowWithActions(
+                        habit = habit,
+                        index = i,
+                        use24h = state.use24h,
+                        status = GameLogic.habitStatus(state, habit),
+                        onComplete = { viewModel.completeHabit(habit.id) },
+                        onEdit = { editHabit = habit }
+                    )
+                }
+            }
+        }
+        section("To do", "⏰", todo)
+        section("Missed", "⚠️", missed)
+        section("Done", "🏆", done)
+
+        if (active.isEmpty()) {
+            item { EmptyHint(emoji = "🌱", title = "No active habits", body = "Add one below or turn on a paused habit.") }
+        }
+
         if (inactive.isNotEmpty()) {
-            item { SectionLabel("Inactive", Modifier.padding(top = 12.dp, bottom = 6.dp)) }
+            item(key = "h_paused") { SectionTitle("Paused", "😴", trailing = "${inactive.size}") }
             items(inactive, key = { it.id }) { habit ->
                 Row(
                     Modifier
-                        .padding(13.dp, 0.dp, 13.dp, 7.dp)
+                        .padding(16.dp, 0.dp, 16.dp, 10.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(Color.White.copy(alpha = 0.55f))
-                        .padding(14.dp, 13.dp),
+                        .card(radius = 18.dp, color = Color.White.copy(alpha = 0.75f), elevation = 1.dp)
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    EmojiGlyph(raw = habit.icon, size = 19.dp)
+                    Box(
+                        Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Color(0xFFF1EDF6)),
+                        contentAlignment = Alignment.Center
+                    ) { EmojiGlyph(raw = habit.icon, size = 19.dp, modifier = Modifier.alpha(0.6f)) }
                     Spacer(Modifier.width(11.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(habit.name, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                        Text("Disabled", fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold)
+                        Text(habit.name, fontSize = 13.sp, fontWeight = FontWeight.Black, color = SoftText)
+                        Text("Paused · not counted today", fontSize = 11.sp, color = MutedText, fontWeight = FontWeight.SemiBold)
                     }
-                    Button(
-                        onClick = { SoundFx.click(); viewModel.toggleHabit(habit.id, true) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GreenDark),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 11.dp, vertical = 5.dp)
-                    ) { Text("Enable", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White) }
+                    Box(
+                        Modifier
+                            .bounceClick(RoundedCornerShape(12.dp)) { SoundFx.click(); viewModel.toggleHabit(habit.id, true) }
+                            .background(Brush.horizontalGradient(listOf(Green, GreenDark)))
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                    ) { Text("Resume", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White) }
                 }
             }
         }
 
         item {
-            Box(
+            Row(
                 Modifier
-                    .padding(13.dp, 12.dp, 13.dp, 24.dp)
+                    .padding(16.dp, 14.dp, 16.dp, 8.dp)
                     .fillMaxWidth()
                     .bounceClick(RoundedCornerShape(18.dp)) { SoundFx.click(); showAdd = true }
-                    .border(2.dp, BorderPink, RoundedCornerShape(18.dp))
-                    .background(Color.White.copy(alpha = 0.6f))
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center
-            ) { Text("+ Add custom habit", color = Pink, fontWeight = FontWeight.Black) }
+                    .background(Color.White.copy(alpha = 0.7f))
+                    .dashedBorder(PinkLight, 18.dp)
+                    .padding(vertical = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier.size(24.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Pink, PinkDark))),
+                    contentAlignment = Alignment.Center
+                ) { Text("+", color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp) }
+                Spacer(Modifier.width(10.dp))
+                Text("Add a custom habit", color = PinkDark, fontWeight = FontWeight.Black, fontSize = 14.sp)
+            }
         }
     }
 
@@ -179,18 +201,18 @@ private fun ProgressRing(pct: Int) {
     var target by remember { mutableStateOf(0f) }
     LaunchedEffect(pct) { target = pct / 100f }
     val sweep by animateFloatAsState(target, tween(1100, easing = FastOutSlowInEasing), label = "ring")
-    Box(Modifier.size(86.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
-            val stroke = 8.dp.toPx()
+            val stroke = 7.dp.toPx()
             val inset = stroke / 2
             val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
             val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
-            drawArc(Color.White.copy(alpha = 0.25f), 0f, 360f, false, topLeft, arcSize, style = Stroke(stroke))
-            drawArc(Color.White, -90f, 360f * sweep, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+            drawArc(PinkLight.copy(alpha = 0.3f), 0f, 360f, false, topLeft, arcSize, style = Stroke(stroke))
+            drawArc(Brush.sweepGradient(listOf(Pink, PurpleDark, Pink)), -90f, 360f * sweep, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CountUpText(pct, TextStyle(color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black), suffix = "%")
-            Text("done", color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            CountUpText(pct, TextStyle(color = TextDark, fontSize = 15.sp, fontWeight = FontWeight.Black), suffix = "%")
+            Text("done", color = SoftText, fontSize = 8.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

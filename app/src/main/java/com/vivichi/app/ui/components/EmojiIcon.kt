@@ -23,6 +23,30 @@ fun EmojiIcon(name: EmojiName, size: Dp, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * "Satisfied" variant of each pet (eyes closed in a happy curve, with blush), generated from the
+ * Twemoji art by painting over the eyes. Used in the Playground whenever the pet reacts.
+ */
+fun happyPetRes(species: String): Int? = when (species) {
+    "cat" -> R.raw.emo_cat_happy
+    "dog" -> R.raw.emo_dog_happy
+    "bunny" -> R.raw.emo_rabbit_happy
+    "fox" -> R.raw.emo_fox_happy
+    "panda" -> R.raw.emo_panda_happy
+    "peng" -> R.raw.emo_penguin_happy
+    "bear" -> R.raw.emo_bear_happy
+    "dragon" -> R.raw.emo_dragon_happy
+    "hamster" -> R.raw.emo_hamster_happy
+    "frog" -> R.raw.emo_frog_happy
+    "lion" -> R.raw.emo_lion_happy
+    "tiger" -> R.raw.emo_tiger_happy
+    "koala" -> R.raw.emo_koala_happy
+    "owl" -> R.raw.emo_owl_happy
+    "otter" -> R.raw.emo_otter_happy
+    "unicorn" -> R.raw.emo_unicorn_happy
+    else -> null
+}
+
 enum class EmojiName(val resId: Int) {
     CAT(R.raw.emo_cat), RABBIT(R.raw.emo_rabbit), FOX(R.raw.emo_fox), PANDA(R.raw.emo_panda),
     PENGUIN(R.raw.emo_penguin), BEAR(R.raw.emo_bear), DRAGON(R.raw.emo_dragon), DOG(R.raw.emo_dog),

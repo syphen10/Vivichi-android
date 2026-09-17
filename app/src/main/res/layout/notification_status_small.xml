@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Collapsed pet status panel. Android 12+ caps collapsed custom notification content at roughly
-  48dp, so the expanded 96dp layout can't just be reused here — it gets squeezed and the rows
-  overlap. Same view ids as the expanded layout so one populate routine fills both.
+  Collapsed pet status panel. Android 12+ caps collapsed custom content at roughly 48dp, so this is
+  a single row: portrait, name + health bar + next habit, and the countdown pill. Shares view ids
+  with the expanded layout; ids missing here (xp_bar, xp_label, mood_chip, timer_caption) are
+  skipped by StatusNotification.populate when compact.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -20,22 +21,22 @@
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="10dp"
-        android:paddingEnd="12dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
 
         <ImageView
             android:id="@+id/pet_face"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:contentDescription="@null" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="8dp">
+            android:layout_marginStart="9dp"
+            android:layout_marginEnd="8dp"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -47,7 +48,7 @@
                     android:id="@+id/pet_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#3D2E4E"
+                    android:textColor="#FFFFFFFF"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:maxLines="1"
@@ -56,7 +57,7 @@
                 <ImageView
                     android:id="@+id/health_bar"
                     android:layout_width="0dp"
-                    android:layout_height="5dp"
+                    android:layout_height="6dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:scaleType="fitXY"
@@ -67,7 +68,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
-                    android:textColor="#6B5B7B"
+                    android:textColor="#F2FFFFFF"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:maxLines="1" />
@@ -78,8 +79,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:textColor="#3D2E4E"
+                android:textColor="#E6FFFFFF"
                 android:textSize="11sp"
+                android:textStyle="bold"
                 android:maxLines="1"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -88,8 +90,13 @@
             android:id="@+id/timer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#E8607E"
-            android:textSize="15sp"
+            android:background="@drawable/notif_timer_pill"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="#FF7A4E9C"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
 </FrameLayout>

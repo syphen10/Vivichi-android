@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.vivichi.app.data.*
 import com.vivichi.app.domain.GameLogic
 import com.vivichi.app.ui.VivichiViewModel
-import com.vivichi.app.ui.components.BuyDialog
+import com.vivichi.app.ui.components.*
 import com.vivichi.app.ui.components.CharacterView
 import com.vivichi.app.ui.components.EmojiGlyph
 import com.vivichi.app.ui.components.PremiumGradient
@@ -68,18 +68,29 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
 
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 14.dp)) {
         item {
-            Column(Modifier.padding(top = 8.dp, bottom = 8.dp)) {
-                Text("Style", fontSize = 21.sp, fontWeight = FontWeight.Black)
-                Text("Unlock buddies and themes with coins you earn from habits.", fontSize = 12.sp, color = SoftText, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 3.dp))
-            }
+            PageHeader(
+                title = "Style",
+                subtitle = "Dress up your buddy and your app",
+                emoji = "🎨",
+                accent = listOf(Purple, PurpleDark),
+                horizontalPadding = 2.dp,
+                stats = listOf(
+                    HeaderStat("${PETS.count { GameLogic.ownsSpecies(state, it.id) }}/${PETS.size}", "Buddies", PinkDark),
+                    HeaderStat("${THEMES.count { GameLogic.canWear(state, it) }}/${THEMES.size}", "Themes", PurpleDark),
+                    HeaderStat("${state.coins}", "Coins", Orange)
+                )
+            )
         }
         item {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(top = 14.dp, bottom = 6.dp)
+                    .cardShadow(26.dp, 4.dp)
                     .clip(RoundedCornerShape(26.dp))
+                    .background(Color.White)
                     .background(Brush.linearGradient(seasonalGradient(state.pet.outfit).map { it.copy(alpha = 0.35f) }))
+                    .border(1.dp, CardBorder, RoundedCornerShape(26.dp))
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -217,14 +228,11 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
 
 @Composable
 private fun SectionHeader(title: String, sub: String) {
-    Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 9.dp), verticalAlignment = Alignment.Bottom) {
-        Text(title, fontSize = 15.sp, fontWeight = FontWeight.Black)
-        Spacer(Modifier.weight(1f))
-        Text(sub, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SoftText)
-    }
+    val emoji = when (title) { "Buddies" -> "🐾"; "Outfits" -> "🧣"; "Themes" -> "🌈"; else -> null }
+    SectionTitle(title = title, emoji = emoji, trailing = sub, horizontalPadding = 2.dp)
 }
 
-/** Plain rows instead of a nested lazy grid — the list is short and this avoids fixed-height guesses. */
+/** Plain rows instead of a nested lazy grid â the list is short and this avoids fixed-height guesses. */
 @Composable
 private fun <T> ChunkedGrid(items: List<T>, columns: Int = 3, cell: @Composable (T) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -245,11 +253,12 @@ private fun pressScale(selected: Boolean): Float =
 
 @Composable
 private fun BuddyCard(pet: PetSpecies, owned: Boolean, selected: Boolean, onClick: () -> Unit) {
-    val border by animateColorAsState(if (selected) PinkDark else Color.Transparent, label = "border")
+    val border by animateColorAsState(if (selected) PinkDark else CardBorder, label = "border")
     Box(Modifier.fillMaxWidth().scale(pressScale(selected))) {
         Column(
             Modifier
                 .fillMaxWidth()
+                .cardShadow(18.dp, 2.dp)
                 .bounceClick(RoundedCornerShape(18.dp), pressedScale = 0.92f) { SoundFx.click(); onClick() }
                 .background(if (selected) Color(0xFFFFF0F5) else Color.White)
                 .border(2.dp, border, RoundedCornerShape(18.dp))
@@ -334,11 +343,12 @@ private fun WearCard(
     swatch: List<Color>? = null,
     onClick: () -> Unit
 ) {
-    val border by animateColorAsState(if (active) PinkDark else Color.Transparent, label = "border")
+    val border by animateColorAsState(if (active) PinkDark else CardBorder, label = "border")
     Box(Modifier.fillMaxWidth().scale(pressScale(active))) {
         Column(
             Modifier
                 .fillMaxWidth()
+                .cardShadow(18.dp, 2.dp)
                 .bounceClick(RoundedCornerShape(18.dp), pressedScale = 0.92f) { SoundFx.click(); onClick() }
                 .background(Color.White)
                 .border(2.dp, border, RoundedCornerShape(18.dp))

@@ -79,6 +79,16 @@ class MainActivity : ComponentActivity() {
                         notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
+                // Onboarding has a light background (dark status icons); the main app sits under the
+                // dark game HUD, so switch to light status icons once the user is in.
+                val onboarded by androidx.compose.runtime.remember { viewModel.state }.collectAsState()
+                LaunchedEffect(onboarded.onboarded) {
+                    enableEdgeToEdge(
+                        statusBarStyle = if (onboarded.onboarded) SystemBarStyle.dark(Color.TRANSPARENT)
+                        else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+                        navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                    )
+                }
                 val price by billing.price.collectAsState()
                 val adReady by RewardedAds.ready.collectAsState()
                 val privacyRequired by RewardedAds.privacyOptionsRequired.collectAsState()

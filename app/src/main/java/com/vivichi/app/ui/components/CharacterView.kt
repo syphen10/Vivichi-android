@@ -32,7 +32,9 @@ fun CharacterView(
     outfit: String,
     health: Int,
     size: Dp = 160.dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Show the closed-eyes "satisfied" face (Playground reactions). */
+    happy: Boolean = false
 ) {
     val infinite = rememberInfiniteTransition(label = "char")
 
@@ -80,7 +82,14 @@ fun CharacterView(
                 },
             contentAlignment = Alignment.Center
         ) {
-            EmojiGlyph(raw = petEmoji(species), size = size * 0.6f)
+            val happyRes = if (happy) happyPetRes(species) else null
+            androidx.compose.animation.Crossfade(targetState = happyRes, animationSpec = tween(140), label = "face") { res ->
+                if (res != null) {
+                    coil.compose.AsyncImage(model = res, contentDescription = null, modifier = Modifier.size(size * 0.6f))
+                } else {
+                    EmojiGlyph(raw = petEmoji(species), size = size * 0.6f)
+                }
+            }
         }
 
         val outfitInfo = ALL_WEARABLES.find { it.id == outfit }

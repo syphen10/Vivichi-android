@@ -8,6 +8,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
 import com.vivichi.app.ui.components.ConfettiBurst
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -67,17 +69,17 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
     )
 
     Box(Modifier.fillMaxSize().background(bgColor)) {
+        com.vivichi.app.ui.components.AppBackdrop(bgColor)
         if (!state.onboarded) {
             OnboardingScreen(viewModel = viewModel)
         } else {
             Scaffold(
-                containerColor = bgColor,
-                // Coins + Premium are visible on every tab. The bar handles the status bar inset
-                // itself, so screens underneath no longer need to paint behind the status bar.
+                containerColor = Color.Transparent,
+                // The game HUD (pet portrait, level, health, XP, coins, Premium) sits above every tab
+                // and handles the status bar inset itself.
                 topBar = {
-                    com.vivichi.app.ui.components.EconomyBar(
-                        coins = state.coins,
-                        isPremium = state.premium,
+                    com.vivichi.app.ui.components.GameHud(
+                        state = state,
                         onCoins = { showCoins = true },
                         onPremium = { showPremium = true }
                     )
@@ -221,7 +223,13 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
 
 @Composable
 private fun VivichiBottomBar(current: Tab, onSelect: (Tab) -> Unit) {
-    NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
+    NavigationBar(
+        containerColor = Color.White,
+        tonalElevation = 0.dp,
+        modifier = Modifier
+            .shadow(16.dp, androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp), clip = false, ambientColor = Color(0x553D2E4E), spotColor = Color(0x553D2E4E))
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+    ) {
         val icons = mapOf(
             Tab.HOME to Icons.Filled.Home,
             Tab.HABITS to Icons.Filled.CheckCircle,

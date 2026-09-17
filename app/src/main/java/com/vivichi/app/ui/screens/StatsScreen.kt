@@ -1,19 +1,11 @@
 package com.vivichi.app.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
-import androidx.compose.ui.text.TextStyle as UiTextStyle
-import com.vivichi.app.ui.components.CountUpText
-import com.vivichi.app.ui.components.FloatingSparkles
-import com.vivichi.app.ui.components.bounceClick
-import com.vivichi.app.ui.components.enterFromBelow
-import com.vivichi.app.ui.components.wiggling
-import kotlinx.coroutines.delay
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,16 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle as UiTextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vivichi.app.data.TitleInfo
 import com.vivichi.app.domain.GameLogic
 import com.vivichi.app.ui.VivichiViewModel
-import com.vivichi.app.ui.components.EmojiGlyph
+import com.vivichi.app.ui.components.*
 import com.vivichi.app.ui.dialogs.ShareStreakDialog
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -41,51 +35,70 @@ fun StatsScreen(viewModel: VivichiViewModel) {
     val state by viewModel.state.collectAsState()
     val today = LocalDate.now()
     var showShare by remember { mutableStateOf(false) }
+    val earned = GameLogic.earnedTitles(state)
+    val earnedCount = earned.count { it.second }
 
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 13.dp)) {
-        item { Text("Stats", fontSize = 21.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp).enterFromBelow(0)) }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
+        item {
+            PageHeader(
+                title = "Stats",
+                subtitle = "$earnedCount of ${earned.size} titles earned",
+                emoji = "🏆",
+                accent = listOf(Yellow, Orange)
+            )
+        }
 
         item {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
+                    .padding(16.dp, 12.dp, 16.dp, 4.dp)
                     .enterFromBelow(1)
                     .fillMaxWidth()
+                    .cardShadow(26.dp, 6.dp)
                     .bounceClick(RoundedCornerShape(26.dp)) { SoundFx.click(); showShare = true }
-                    .background(Brush.linearGradient(listOf(Yellow, Orange)))
+                    .background(Brush.linearGradient(listOf(Color(0xFFFFC857), Color(0xFFFF8A3D), Color(0xFFFF6B8B))))
             ) {
                 FloatingSparkles(Modifier.matchParentSize(), color = Color.White, count = 12, seed = 5)
-                Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        EmojiGlyph(raw = "🔥", size = 16.dp, modifier = Modifier.wiggling(10f, 520))
-                        Text(" Day Streak", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("CURRENT STREAK", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            CountUpText(state.streak, UiTextStyle(color = Color.White, fontSize = 52.sp, fontWeight = FontWeight.Black, lineHeight = 52.sp))
+                            Text(" days", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 8.dp))
+                        }
+                        Text("Best: ${state.bestStreak} days · Tap to share", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
-                    CountUpText(state.streak, UiTextStyle(color = Color.White, fontSize = 54.sp, fontWeight = FontWeight.Black, lineHeight = 54.sp))
-                    Text("Tap to share!", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
+                    EmojiGlyph(raw = "🔥", size = 64.dp, modifier = Modifier.wiggling(6f, 700).floating(4.dp, 1600))
                 }
             }
         }
 
         item {
-            Row(Modifier.fillMaxWidth().padding(vertical = 5.dp).enterFromBelow(2), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                StatCard(state.bestStreak, "Best Streak", Modifier.weight(1f))
-                StatCard(state.pet.level, "Level", Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth().padding(16.dp, 10.dp, 16.dp, 0.dp).enterFromBelow(2), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatCard(state.pet.level, "Level", "⭐", PurpleDark, Modifier.weight(1f))
+                StatCard(state.totalXP, "Total XP", "✨", Orange, Modifier.weight(1f))
             }
         }
         item {
-            Row(Modifier.fillMaxWidth().padding(bottom = 5.dp).enterFromBelow(3), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                StatCard(state.totalXP, "Total XP", Modifier.weight(1f))
-                StatCard(state.totalDone, "Habits Done", Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth().padding(16.dp, 10.dp, 16.dp, 0.dp).enterFromBelow(3), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatCard(state.totalDone, "Habits done", "✅", GreenDark, Modifier.weight(1f))
+                StatCard(state.cemetery.size, "Buddies lost", "🌸", PinkDark, Modifier.weight(1f))
             }
         }
 
+        item { SectionTitle("Last 7 days", "🎯", trailing = "Today ${GameLogic.completionPct(state)}%") }
         item {
-            Text("Last 7 Days", fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp, bottom = 10.dp))
-        }
-        item {
-            // Row must fit the tallest bar (4 + 58 = 62dp) plus spacer and day label (~16dp);
-            // at 72dp with 66dp bars the labels under full bars were pushed out and clipped.
-            Row(Modifier.fillMaxWidth().height(90.dp).enterFromBelow(4), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+            Row(
+                Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .enterFromBelow(4)
+                    .card(radius = 22.dp)
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .height(90.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
                 for (i in 6 downTo 0) {
                     val day = today.minusDays(i.toLong())
                     val pct = if (i == 0) GameLogic.completionPct(state) else (state.history.getOrNull(i - 1)?.pct ?: 0)
@@ -101,24 +114,25 @@ fun StatsScreen(viewModel: VivichiViewModel) {
                             Modifier
                                 .fillMaxWidth()
                                 .height(barHeight)
-                                .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
+                                .clip(RoundedCornerShape(6.dp))
                                 .background(Brush.verticalGradient(if (i == 0) listOf(Pink, PinkDark) else listOf(Purple, PurpleDark)))
                         )
-                        Spacer(Modifier.height(3.dp))
-                        Text(day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(1), fontSize = 9.sp, fontWeight = FontWeight.Black, color = SoftText)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(1),
+                            fontSize = 10.sp, fontWeight = FontWeight.Black, color = if (i == 0) PinkDark else SoftText
+                        )
                     }
                 }
             }
         }
 
-        item { Text("Titles", fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 18.dp, bottom = 10.dp)) }
-        val earned = GameLogic.earnedTitles(state)
+        item { SectionTitle("Titles", "👑", trailing = "$earnedCount/${earned.size}") }
         itemsIndexed(earned) { index, (title, isEarned) ->
-            Box(Modifier.enterFromBelow(5 + index)) {
+            Box(Modifier.padding(horizontal = 16.dp).enterFromBelow(5 + index)) {
                 TitleRow(title, isEarned, state.activeTitle == title.id) { viewModel.equipTitle(title.id) }
             }
         }
-        item { Spacer(Modifier.height(20.dp)) }
     }
 
     if (showShare) {
@@ -127,16 +141,22 @@ fun StatsScreen(viewModel: VivichiViewModel) {
 }
 
 @Composable
-private fun StatCard(value: Int, label: String, modifier: Modifier = Modifier) {
-    Column(
+private fun StatCard(value: Int, label: String, emoji: String, accent: Color, modifier: Modifier = Modifier) {
+    Row(
         modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
-            .padding(14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .card(radius = 20.dp)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        CountUpText(value, UiTextStyle(fontSize = 26.sp, fontWeight = FontWeight.Black, color = Pink))
-        Text(label, fontSize = 10.sp, color = SoftText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 3.dp))
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(accent.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) { EmojiGlyph(raw = emoji, size = 20.dp) }
+        Spacer(Modifier.width(10.dp))
+        Column {
+            CountUpText(value, UiTextStyle(fontSize = 22.sp, fontWeight = FontWeight.Black, color = TextDark))
+            Text(label, fontSize = 10.sp, color = SoftText, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
@@ -145,25 +165,37 @@ private fun TitleRow(title: TitleInfo, earned: Boolean, active: Boolean, onEquip
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(bottom = 7.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
-            .padding(13.dp)
-            .then(if (!earned) Modifier else Modifier),
+            .padding(bottom = 10.dp)
+            .card(radius = 18.dp, color = if (earned) Color.White else Color.White.copy(alpha = 0.7f), elevation = if (earned) 3.dp else 1.dp)
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.width(36.dp)) { EmojiGlyph(raw = title.emoji, size = 20.dp) }
+        Box(
+            Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    if (earned) Brush.linearGradient(listOf(Color(0xFFFFE9A8), Color(0xFFFFC56B)))
+                    else Brush.linearGradient(listOf(Color(0xFFF1EDF6), Color(0xFFE7E1EF)))
+                ),
+            contentAlignment = Alignment.Center
+        ) { EmojiGlyph(raw = if (earned) title.emoji else "🔒", size = 20.dp) }
+        Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
-            Text(title.name, fontSize = 13.sp, fontWeight = FontWeight.Black, color = if (earned) TextDark else MutedText)
-            Text(if (earned) "✓ Earned" else "🔒 ${title.requirement}", fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 1.dp))
+            Text(title.name, fontSize = 14.sp, fontWeight = FontWeight.Black, color = if (earned) TextDark else SoftText)
+            Text(
+                if (earned) "Earned" else title.requirement,
+                fontSize = 11.sp, color = if (earned) GreenDark else MutedText, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 1.dp)
+            )
         }
         if (earned) {
-            Button(
-                onClick = { SoundFx.click(); onEquip() },
-                colors = ButtonDefaults.buttonColors(containerColor = if (active) GreenDark else PinkDark),
-                shape = RoundedCornerShape(9.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-            ) { Text(if (active) "Equipped" else "Equip", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White) }
+            Box(
+                Modifier
+                    .bounceClick(RoundedCornerShape(12.dp)) { SoundFx.click(); onEquip() }
+                    .background(if (active) Brush.linearGradient(listOf(Green, GreenDark)) else Brush.linearGradient(listOf(Pink, PinkDark)))
+                    .padding(horizontal = 12.dp, vertical = 7.dp)
+            ) { Text(if (active) "Equipped" else "Equip", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White) }
         }
     }
 }

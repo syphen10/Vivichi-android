@@ -30,7 +30,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.vivichi.app.notify.ReminderScheduler
 import com.vivichi.app.ui.VivichiViewModel
-import com.vivichi.app.ui.components.EmojiGlyph
+import com.vivichi.app.ui.components.*
 import com.vivichi.app.ui.dialogs.EditTimesDialog
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
@@ -84,7 +84,15 @@ fun SettingsScreen(
     }
 
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 13.dp)) {
-        item { Text("More", fontSize = 21.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 20.dp, bottom = 6.dp)) }
+        item {
+            PageHeader(
+                title = "More",
+                subtitle = "Settings, reminders & support",
+                emoji = "⚙️",
+                accent = listOf(Color(0xFFB8C4FF), PurpleDark),
+                horizontalPadding = 3.dp
+            )
+        }
 
         item { SettingsLabel("Support Vivichi") }
         item {
@@ -186,8 +194,7 @@ fun SettingsScreen(
                 Modifier
                     .fillMaxWidth()
                     .padding(bottom = 7.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White)
+                    .card(radius = 18.dp, elevation = 2.dp)
                     .padding(13.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -215,8 +222,7 @@ fun SettingsScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White)
+                    .card(radius = 18.dp, elevation = 2.dp)
                     .padding(13.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -260,8 +266,7 @@ fun SettingsScreen(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = if (!notifsOk) 8.dp else 0.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White)
+                    .card(radius = 18.dp, elevation = 2.dp)
                     .padding(13.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -286,8 +291,7 @@ fun SettingsScreen(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 7.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White)
+                    .card(radius = 18.dp, elevation = 2.dp)
                     .padding(13.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -422,7 +426,7 @@ private fun ReliabilityWarning(title: String, body: String, actionLabel: String,
 
 @Composable
 private fun SettingsLabel(text: String) {
-    Text(text.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Black, color = MutedText, modifier = Modifier.padding(top = 16.dp, bottom = 9.dp))
+    SectionTitle(title = text, horizontalPadding = 3.dp)
 }
 
 @Composable
@@ -436,9 +440,10 @@ private fun SettingsRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(bottom = 7.dp)
+            .padding(bottom = 9.dp)
+            .cardShadow(18.dp, 2.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
+            .cardSurface(18.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = { SoundFx.click(); onClick() }) else Modifier)
             .padding(13.dp),
         verticalAlignment = Alignment.CenterVertically,
