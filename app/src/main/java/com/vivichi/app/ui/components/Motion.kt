@@ -170,7 +170,7 @@ fun AnimatedBar(
             sweepAnim.animateTo(1.4f, tween(1400, easing = LinearEasing))
         }
     }
-    val sweep = sweepAnim.value
+    // (sweepAnim.value is read inside the draw lambda below, so the sweep never recomposes.)
     Box(
         modifier
             .fillMaxWidth()
@@ -183,11 +183,12 @@ fun AnimatedBar(
                 .fillMaxHeight()
                 .fillMaxWidth(fill)
                 .clip(RoundedCornerShape(height))
+                .graphicsLayer()
                 .background(brush)
                 .drawWithContent {
                     drawContent()
                     if (shine && fill > 0.02f) {
-                        val x = size.width * sweep
+                        val x = size.width * sweepAnim.value
                         drawRect(
                             Brush.linearGradient(
                                 listOf(Color.White.copy(alpha = 0f), Color.White.copy(alpha = 0.45f), Color.White.copy(alpha = 0f)),
@@ -254,7 +255,7 @@ fun ConfettiBurst(
     LaunchedEffect(trigger) { time.animateTo(1f, tween(durationMs, easing = LinearEasing)) }
     if (time.value >= 1f) return
 
-    Canvas(modifier.fillMaxSize()) {
+    Canvas(modifier.fillMaxSize().graphicsLayer()) {
         val t = time.value
         val ox = size.width * origin.x
         val oy = size.height * origin.y
@@ -301,7 +302,9 @@ fun FloatingSparkles(
     }
     val clock = rememberInfiniteTransition(label = "sparkles")
     val t by clock.animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "t")
-    Canvas(modifier.fillMaxSize()) {
+    // Own layer: the per-frame redraw stays inside this canvas instead of re-recording the
+    // whole card or screen around it (the main source of scroll jank).
+    Canvas(modifier.fillMaxSize().graphicsLayer()) {
         seeds.forEach { (x0, y0, speed, sz, phase) ->
             val y = ((y0 - t * speed) % 1f + 1f) % 1f
             val x = x0 + sin((t * 2 * PI * speed + phase * 6).toFloat()) * 0.03f
@@ -322,7 +325,7 @@ fun StaticSparkles(modifier: Modifier = Modifier, color: Color = Color.White, co
         val r = Random(seed)
         List(count) { floatArrayOf(r.nextFloat(), 0.1f + r.nextFloat() * 0.8f, 3f + r.nextFloat() * 5f, 0.35f + r.nextFloat() * 0.5f) }
     }
-    Canvas(modifier.fillMaxSize()) {
+    Canvas(modifier.fillMaxSize().graphicsLayer()) {
         points.forEach { (x, y, sz, a) ->
             drawSparkle(Offset(x * size.width, y * size.height), sz.dp.toPx(), color.copy(alpha = color.alpha * a))
         }

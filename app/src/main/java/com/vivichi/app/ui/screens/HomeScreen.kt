@@ -135,6 +135,7 @@ fun HomeScreen(viewModel: VivichiViewModel, onNavigateHabits: () -> Unit) {
                     habit = habit,
                     status = GameLogic.habitStatus(state, habit),
                     use24h = state.use24h,
+                    startsTomorrow = GameLogic.startsTomorrow(state, habit),
                     modifier = Modifier.padding(16.dp, 0.dp, 16.dp, 10.dp).enterFromBelow(3 + index)
                 ) {
                     viewModel.completeHabit(habit.id)
@@ -252,10 +253,12 @@ fun HabitCard(
     modifier: Modifier = Modifier,
     onEdit: (() -> Unit)? = null,
     use24h: Boolean = false,
+    startsTomorrow: Boolean = false,
     onClick: () -> Unit
 ) {
     val done = status == HabitStatus.DONE
-    val expired = status == HabitStatus.EXPIRED
+    // A habit added today after its window closed isn't "missed" — it simply begins tomorrow.
+    val expired = status == HabitStatus.EXPIRED && !startsTomorrow
     val clickable = status == HabitStatus.AVAILABLE
     val accent = intensityColor(habit.intensity)
 
@@ -298,6 +301,7 @@ fun HabitCard(
                 Spacer(Modifier.height(5.dp))
                 when {
                     done -> Text("Completed · +${habit.xp} XP earned", fontSize = 11.sp, color = GreenDark, fontWeight = FontWeight.Black)
+                    startsTomorrow -> Text("🌱 New · starts tomorrow at ${formatHabitTime(habit.time, use24h)}", fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.Bold)
                     expired -> Text("Missed · back tomorrow at ${formatHabitTime(habit.time, use24h)}", fontSize = 11.sp, color = Red, fontWeight = FontWeight.Bold)
                     else -> Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         InfoPill(formatHabitTime(habit.time, use24h), emoji = "⏰")

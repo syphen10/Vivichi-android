@@ -107,15 +107,27 @@ object GameLogic {
         return if (hrs > 0) "${hrs}h ${mins}m" else "${mins}m"
     }
 
+    /**
+     * Habits that count toward today's score (completion, mood, streak, health). A habit added
+     * today only starts counting tomorrow, so adding one late in the day can't instantly count
+     * as "missed" and hurt the pet. It can still be completed today for XP.
+     */
+    fun scoredHabits(state: AppState): List<Habit> =
+        state.habits.filter { it.enabled && (it.createdOn == null || it.createdOn != state.todayLog.date) }
+
+    /** A habit added today whose window already closed: it simply starts tomorrow. */
+    fun startsTomorrow(state: AppState, habit: Habit): Boolean =
+        habit.createdOn != null && habit.createdOn == state.todayLog.date && habitStatus(state, habit) == HabitStatus.EXPIRED
+
     fun completionPct(state: AppState): Int {
-        val enabled = state.habits.filter { it.enabled }
+        val enabled = scoredHabits(state)
         if (enabled.isEmpty()) return 0
         val done = enabled.count { state.todayLog.completed[it.id] == true }
         return ((done.toDouble() / enabled.size) * 100).roundToInt()
     }
 
     private fun habitMood(state: AppState): Mood {
-        val enabled = state.habits.filter { it.enabled }
+        val enabled = scoredHabits(state)
         if (enabled.isEmpty()) return Mood.HAPPY
         val done = enabled.count { state.todayLog.completed[it.id] == true }
         val p = done.toDouble() / enabled.size
@@ -155,7 +167,7 @@ object GameLogic {
     }
 
     fun buddyMessage(state: AppState): String {
-        val enabled = state.habits.filter { it.enabled }
+        val enabled = scoredHabits(state)
         val allDone = enabled.isNotEmpty() && enabled.all { state.todayLog.completed[it.id] == true }
         val m = mood(state)
         val h = LocalTime.now().hour
@@ -221,7 +233,7 @@ object GameLogic {
         }
         val leveledUp = if (level > state.pet.level) level else null
 
-        val enabled = state.habits.filter { it.enabled }
+        val enabled = scoredHabits(state)
         val allDoneNow = enabled.isNotEmpty() && enabled.all { completed[it.id] == true }
         var streak = state.streak
         var bestStreak = state.bestStreak
@@ -278,7 +290,7 @@ object GameLogic {
         }
 
         val yesterday = LocalDate.now().minusDays(1).toString()
-        val enabled = state.habits.filter { it.enabled }
+        val enabled = scoredHabits(state)
         val done = enabled.count { state.todayLog.completed[it.id] == true }
         val pct = if (enabled.isNotEmpty()) done.toDouble() / enabled.size else 1.0
 

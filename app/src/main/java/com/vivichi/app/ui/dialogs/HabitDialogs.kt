@@ -3,6 +3,8 @@
 package com.vivichi.app.ui.dialogs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -28,6 +30,8 @@ import com.vivichi.app.ui.components.EmojiGlyph
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
 import com.vivichi.app.util.formatHabitTime
+import com.vivichi.app.util.habitWindowPassed
+import com.vivichi.app.util.nextFullHour
 
 private val COMMON_EMOJIS = listOf(
     "🪥","💧","🍳","🥗","📚","🏃","📖","😴","🎵","🧘","💧","🧴","🍎","🐾","🎨","🎯","🎮","🎵","🎹","🧹","🌿","📓","📝","⏰","🐱","🐻","🎨","💼","🥤","🍵","😴","🧠","❤️","⭐","✅","🔥","💪","📷","🌸","🌿","☀️","⚡","🎯","💊","📞","📅","☕","🪴","🐾","🎵","☕","🚿","🧴","📖","🎧","🍎","🥳","🥰","😄","🤩","😎","🎺","🎸","🎹","🎤","🔥","🎁"
@@ -43,7 +47,8 @@ fun AddEditHabitDialog(
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var icon by remember { mutableStateOf(existing?.icon ?: "✨") }
     var xp by remember { mutableIntStateOf(existing?.xp ?: 3) }
-    var time by remember { mutableStateOf(existing?.time ?: "09:00") }
+    var time by remember { mutableStateOf(existing?.time ?: nextFullHour()) }
+    var nameError by remember { mutableStateOf(false) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -66,10 +71,14 @@ fun AddEditHabitDialog(
 
             FieldLabel("Habit name")
             OutlinedTextField(
-                value = name, onValueChange = { name = it },
+                value = name, onValueChange = { name = it; if (it.isNotBlank()) nameError = false },
                 placeholder = { Text("e.g. Drink water") },
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(18.dp),
+                isError = nameError,
+                supportingText = if (nameError) {
+                    { Text("Give your habit a name first", color = Red, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                } else null
             )
             Spacer(Modifier.height(12.dp))
 
@@ -95,14 +104,16 @@ fun AddEditHabitDialog(
 
             FieldLabel("Intensity")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                IntensityChip("3 XP", "Low", xp == 3, Modifier.weight(1f)) { SoundFx.click(); xp = 3 }
-                IntensityChip("5 XP", "Medium", xp == 5, Modifier.weight(1f)) { SoundFx.click(); xp = 5 }
-                IntensityChip("10 XP", "High", xp == 10, Modifier.weight(1f)) { SoundFx.click(); xp = 10 }
+                IntensityChip("3 XP", "Low", xp == 3, listOf(Green, GreenDark), Modifier.weight(1f)) { SoundFx.click(); xp = 3 }
+                IntensityChip("5 XP", "Medium", xp == 5, listOf(Orange, Color(0xFFE8833A)), Modifier.weight(1f)) { SoundFx.click(); xp = 5 }
+                IntensityChip("10 XP", "High", xp == 10, listOf(Pink, PinkDark), Modifier.weight(1f)) { SoundFx.click(); xp = 10 }
             }
             if (existing == null) {
+                val passed = habitWindowPassed(time)
                 Text(
-                    "New habits give XP right away and start earning coins tomorrow.",
-                    fontSize = 11.sp, color = SoftText, fontWeight = FontWeight.SemiBold,
+                    if (passed) "⏳ ${formatHabitTime(time, use24h)} has already passed today, so this habit starts tomorrow."
+                    else "New habits give XP right away and start earning coins tomorrow.",
+                    fontSize = 11.sp, color = if (passed) Orange else SoftText, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 10.dp)
                 )
             }
@@ -110,7 +121,7 @@ fun AddEditHabitDialog(
 
             VivichiButton(
                 text = if (existing != null) "Save Changes" else "Add Habit",
-                onClick = { if (name.isNotBlank()) onSave(name.trim(), icon, xp, time) },
+                onClick = { if (name.isNotBlank()) onSave(name.trim(), icon, xp, time) else nameError = true },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -130,23 +141,28 @@ private fun FieldLabel(text: String) {
 }
 
 @Composable
-private fun IntensityChip(value: String, label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun IntensityChip(value: String, label: String, selected: Boolean, colors: List<Color>, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // Selected chip fills with its colour and gets a tick; the others stay a pale tint of it,
+    // so which XP is chosen is obvious at a glance.
+    val shape = RoundedCornerShape(18.dp)
     Column(
         modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(if (selected) Color(0xFFFFF0F5) else BgPink)
-            .then(Modifier)
+            .clip(shape)
+            .then(
+                if (selected) Modifier.background(androidx.compose.ui.graphics.Brush.linearGradient(colors))
+                else Modifier.background(colors.first().copy(alpha = 0.12f))
+                    .border(1.5.dp, colors.first().copy(alpha = 0.35f), shape)
+            )
+            .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
-            TextButton(onClick = onClick, contentPadding = PaddingValues(0.dp)) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(value, fontSize = 16.sp, fontWeight = FontWeight.Black, color = TextDark)
-                    Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SoftText)
-                }
-            }
-        }
+        Text(
+            if (selected) "✓ $value" else value,
+            fontSize = 15.sp, fontWeight = FontWeight.Black,
+            color = if (selected) Color.White else colors.last()
+        )
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (selected) Color.White.copy(alpha = 0.9f) else SoftText)
     }
 }
 

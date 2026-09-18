@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -110,8 +111,7 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
         }
 
         item { SectionHeader("Buddies", "${PETS.count { GameLogic.ownsSpecies(state, it.id) }}/${PETS.size} unlocked") }
-        item {
-            ChunkedGrid(PETS) { p ->
+        gridRows("pets", PETS) { p ->
                 val owned = GameLogic.ownsSpecies(state, p.id)
                 BuddyCard(
                     pet = p,
@@ -122,11 +122,9 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
                     }
                 )
             }
-        }
 
         item { SectionHeader("Outfits", "Level up or go Premium") }
-        item {
-            ChunkedGrid(OUTFITS) { o ->
+        gridRows("outfits", OUTFITS) { o ->
                 val canWear = GameLogic.canWear(state, o)
                 val sub = when {
                     canWear && state.pet.outfit == o.id -> "Wearing"
@@ -142,7 +140,6 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
                     }
                 }
             }
-        }
 
         item {
             Row(Modifier.padding(top = 18.dp, bottom = 9.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -152,18 +149,15 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
                 }
             }
         }
-        item {
-            ChunkedGrid(SEASONAL_OUTFITS, columns = 4) { o ->
+        gridRows("seasons", SEASONAL_OUTFITS, columns = 4) { o ->
                 val isCurrent = o.season == season
                 WearCard(o.emoji, o.name, if (isCurrent) "Now" else "Free", locked = false, active = state.pet.outfit == o.id, dim = !isCurrent) {
                     viewModel.pickOutfit(o.id)
                 }
             }
-        }
 
         item { SectionHeader("Themes", "Recolour the whole app") }
-        item {
-            ChunkedGrid(THEMES) { o ->
+        gridRows("themes", THEMES) { o ->
                 val canWear = GameLogic.canWear(state, o)
                 val sub = when {
                     canWear && state.pet.outfit == o.id -> "Active"
@@ -186,7 +180,6 @@ fun StyleScreen(viewModel: VivichiViewModel, adOffer: com.vivichi.app.ui.compone
                     }
                 }
             }
-        }
         item { Spacer(Modifier.height(24.dp)) }
     }
 
@@ -232,14 +225,25 @@ private fun SectionHeader(title: String, sub: String) {
     SectionTitle(title = title, emoji = emoji, trailing = sub, horizontalPadding = 2.dp)
 }
 
-/** Plain rows instead of a nested lazy grid â the list is short and this avoids fixed-height guesses. */
-@Composable
-private fun <T> ChunkedGrid(items: List<T>, columns: Int = 3, cell: @Composable (T) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.chunked(columns).forEachIndexed { r, row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+/**
+ * Emits one lazy-list item per row of [columns] cells. Rows are composed only as they scroll
+ * into view (a whole 16-card grid as a single item composed every card at once, which stuttered).
+ * Each row slides in once; the stagger runs across the row's cells.
+ */
+private fun <T> LazyListScope.gridRows(
+    key: String,
+    items: List<T>,
+    columns: Int = 3,
+    cell: @Composable (T) -> Unit
+) {
+    items.chunked(columns).forEachIndexed { r, row ->
+        item(key = "$key-$r") {
+            Row(
+                Modifier.padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 row.forEachIndexed { c, item ->
-                    Box(Modifier.weight(1f).enterFromBelow(r * 2 + c, distance = 18.dp)) { cell(item) }
+                    Box(Modifier.weight(1f).enterFromBelow(c, distance = 18.dp)) { cell(item) }
                 }
                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }

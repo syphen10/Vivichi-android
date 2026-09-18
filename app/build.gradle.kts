@@ -27,8 +27,8 @@ android {
         applicationId = "com.vivichi.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.4.1"
+        versionCode = 12
+        versionName = "1.4.2"
         vectorDrawables.useSupportLibrary = true
 
         // AdMob IDs live in gradle.properties so real ones can be swapped in without touching

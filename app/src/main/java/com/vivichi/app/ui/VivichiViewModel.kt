@@ -55,6 +55,7 @@ class VivichiViewModel(
             // survive reboots or app force-stops, and previously they were only ever set when
             // the user explicitly edited a habit — so reminders could silently stop forever.
             scheduler?.rescheduleAll(_state.value)
+            refreshPanelIfNeeded(_state.value)
             startTicker()
         }
     }
@@ -63,16 +64,43 @@ class VivichiViewModel(
         while (true) {
             delay(60_000)
             runDayCheck()
-            _state.value = GameLogic.refreshExpiry(_state.value)
-            persist()
+            val before = _state.value
+            _state.value = GameLogic.refreshExpiry(before)
+            // Nothing expired this minute → nothing to save. The panel may still need a refresh
+            // when a habit's unlock time passes, which persist() detects via panelKey.
+            if (_state.value != before) persist() else refreshPanelIfNeeded(_state.value)
         }
     }
 
+    private var lastPanelKey: Any? = null
+
+    /** Everything the shade panel shows; it's only rebuilt when this changes. */
+    private fun panelKey(s: AppState): Any {
+        val now = java.time.LocalTime.now()
+        val nowMins = now.hour * 60 + now.minute
+        return listOf(
+            s.onboarded, s.statusPanel, s.use24h, s.streak,
+            s.pet.name, s.pet.species, s.pet.level, s.pet.xp, s.pet.health, s.pet.outfit,
+            s.habits, s.todayLog,
+            // changes exactly when a habit's unlock time passes, so "next up" stays right
+            s.habits.count { h -> h.enabled && (h.time.split(":").let { it[0].toInt() * 60 + it[1].toInt() }) <= nowMins }
+        )
+    }
+
+    private fun refreshPanelIfNeeded(s: AppState) {
+        val key = panelKey(s)
+        if (key == lastPanelKey) return
+        lastPanelKey = key
+        // Building the panel renders several bitmaps and an SVG; keep that off the main thread.
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) { scheduler?.updateStatusPanel(s) }
+    }
+
     private fun persist() {
-        viewModelScope.launch { repository.save(_state.value) }
+        val s = _state.value
+        viewModelScope.launch { repository.save(s) }
         // Every state mutation funnels through here, so this is the one hook that keeps the
         // shade panel (health, next habit, countdown) in step with the app.
-        scheduler?.updateStatusPanel(_state.value)
+        refreshPanelIfNeeded(s)
     }
 
     /** Swaps in a whole state once the disk load has finished (used by the debug showcase profile). */
@@ -153,12 +181,14 @@ class VivichiViewModel(
     }
 
     private fun runDayCheck() {
-        val outcome = GameLogic.checkDayRollover(_state.value)
+        val before = _state.value
+        val outcome = GameLogic.checkDayRollover(before)
         _state.value = outcome.state
         if (outcome.died && outcome.cemeteryEntry != null) {
             _event.value = _event.value.copy(diedEntry = outcome.cemeteryEntry)
         }
-        persist()
+        // Runs every minute; only write when the day actually rolled over.
+        if (outcome.state != before) persist()
     }
 
     /**
@@ -250,11 +280,9 @@ class VivichiViewModel(
     }
 
     fun addOrUpdateHabit(id: String?, name: String, icon: String, xp: Int, time: String): Boolean {
-        val hm = time.split(":").map { it.toInt() }
-        val minsOfDay = hm[0] * 60 + hm[1]
-        val nowH = java.time.LocalTime.now()
-        val nowMins = nowH.hour * 60 + nowH.minute
-        if (id == null && nowMins > minsOfDay + 150) return false // caller should show "expired" confirm
+        // New habits are always added. One whose window already closed today simply starts
+        // tomorrow (GameLogic.scoredHabits keeps it out of today's score), instead of the old
+        // separate "time has passed" prompt, which made it look like Add did nothing.
         val intensity = when (xp) { 3 -> "low"; 5 -> "medium"; else -> "high" }
         val habits = _state.value.habits.toMutableList()
         if (id != null) {

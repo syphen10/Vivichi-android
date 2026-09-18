@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -88,7 +89,8 @@ fun intensityColor(intensity: String): Color = when (intensity) {
 /** Page background: theme colour plus a faint, static paw-print and sparkle texture. */
 @Composable
 fun AppBackdrop(color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier.fillMaxSize().background(color)) {
+    // Own layer so this ~450-shape texture is recorded once, not every time something above redraws.
+    Canvas(modifier.fillMaxSize().graphicsLayer().background(color)) {
         val cell = 86.dp.toPx()
         val ink = Plum.copy(alpha = 0.045f)
         var row = 0
@@ -339,7 +341,8 @@ fun InfoPill(text: String, emoji: String? = null, tint: Color = SoftText, bg: Co
 
 @Composable
 fun rememberTodayCounts(state: AppState): Triple<Int, Int, Int> = remember(state.habits, state.todayLog) {
-    val enabled = state.habits.filter { it.enabled }
+    // New habits that start tomorrow aren't "missed" — leave them out of today's tally.
+    val enabled = state.habits.filter { it.enabled && !GameLogic.startsTomorrow(state, it) }
     val done = enabled.count { GameLogic.habitStatus(state, it) == com.vivichi.app.domain.HabitStatus.DONE }
     val missed = enabled.count { GameLogic.habitStatus(state, it) == com.vivichi.app.domain.HabitStatus.EXPIRED }
     Triple(done, enabled.size - done - missed, missed)

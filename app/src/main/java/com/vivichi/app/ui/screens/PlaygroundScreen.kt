@@ -36,6 +36,8 @@ import com.vivichi.app.ui.components.enterFromBelow
 import com.vivichi.app.ui.theme.*
 import com.vivichi.app.util.SoundFx
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.togetherWith
 import kotlin.random.Random
 
@@ -67,7 +69,6 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
             pop.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
         }
     }
-    val scale = pop.value
 
     // Closed-eyes "satisfied" face for a moment after every action; a new tap restarts the timer.
     var happy by remember { mutableStateOf(false) }
@@ -80,7 +81,10 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
     }
     var quote by remember { mutableStateOf<com.vivichi.app.data.Quote?>(null) }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+
+    Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
         PageHeader(
             title = "Playground",
             subtitle = "Spend some time with ${state.pet.name.ifBlank { "your buddy" }}",
@@ -126,7 +130,8 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
                 }
                 FloatingSparkles(Modifier.matchParentSize(), color = Color.White, count = 12, seed = 21)
                 Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp), contentAlignment = Alignment.Center) {
-                    Box(Modifier.scale(scale)) {
+                    // Scale read in the layer phase, so the pop animates without recomposing the screen.
+                    Box(Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }) {
                         CharacterView(species = state.pet.species, mood = Mood.HAPPY, outfit = state.pet.outfit, health = state.pet.health, size = 180.dp, happy = happy)
                     }
                     burst?.let { (id, emoji) -> EmojiBurst(trigger = id, emoji = emoji, modifier = Modifier.size(180.dp)) }
@@ -174,6 +179,8 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
                             bump++
                             burst = bump to action.emoji
                             SoundFx.playgroundAction(action.key)
+                            // Glide back up so the pet's reaction is in view.
+                            if (scrollState.value > 0) scope.launch { scrollState.animateScrollTo(0, tween(450)) }
                         }
                     }
                 }

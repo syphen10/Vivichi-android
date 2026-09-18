@@ -47,7 +47,7 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
     val state by viewModel.state.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var editHabit by remember { mutableStateOf<Habit?>(null) }
-    var pendingExpiredAdd by remember { mutableStateOf<PendingHabit?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val pct = GameLogic.completionPct(state)
     val order = mapOf(HabitStatus.AVAILABLE to 0, HabitStatus.EXPIRED to 1, HabitStatus.DONE to 2, HabitStatus.DISABLED to 3)
@@ -56,7 +56,8 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
 
     val (doneCount, leftCount, missedCount) = rememberTodayCounts(state)
     val todo = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.AVAILABLE }
-    val missed = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.EXPIRED }
+    val tomorrow = active.filter { GameLogic.startsTomorrow(state, it) }
+    val missed = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.EXPIRED && it !in tomorrow }
     val done = active.filter { GameLogic.habitStatus(state, it) == HabitStatus.DONE }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
@@ -87,6 +88,7 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
                         index = i,
                         use24h = state.use24h,
                         status = GameLogic.habitStatus(state, habit),
+                        startsTomorrow = habit in tomorrow,
                         onComplete = { viewModel.completeHabit(habit.id) },
                         onEdit = { editHabit = habit }
                     )
@@ -96,6 +98,7 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
         section("To do", "⏰", todo)
         section("Missed", "⚠️", missed)
         section("Done", "🏆", done)
+        section("Starts tomorrow", "🌱", tomorrow)
 
         if (active.isEmpty()) {
             item { EmptyHint(emoji = "🌱", title = "No active habits", body = "Add one below or turn on a paused habit.") }
@@ -158,9 +161,16 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
             existing = null,
             onDismiss = { showAdd = false },
             onSave = { name, icon, xp, time ->
-                val ok = viewModel.addOrUpdateHabit(null, name, icon, xp, time)
-                if (!ok) pendingExpiredAdd = PendingHabit(name, icon, xp, time)
+                viewModel.addOrUpdateHabit(null, name, icon, xp, time)
                 showAdd = false
+                // Confirm visibly — the new habit lands in whichever section fits, maybe off-screen.
+                val t = com.vivichi.app.util.formatHabitTime(time, state.use24h)
+                val passed = com.vivichi.app.util.habitWindowPassed(time)
+                android.widget.Toast.makeText(
+                    context,
+                    if (passed) "\"$name\" added — it starts tomorrow at $t" else "\"$name\" added for $t",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
             }
             , use24h = state.use24h
         )
@@ -174,23 +184,6 @@ fun HabitsScreen(viewModel: VivichiViewModel) {
                 editHabit = null
             }
             , use24h = state.use24h
-        )
-    }
-    pendingExpiredAdd?.let { pending ->
-        AlertDialog(
-            onDismissRequest = { pendingExpiredAdd = null },
-            title = { Text("This time has passed!", fontWeight = FontWeight.Black) },
-            text = { Text("${pending.name} at ${com.vivichi.app.util.formatHabitTime(pending.time, state.use24h)} already expired today. It will unlock next tomorrow.", fontSize = 13.sp) },
-            confirmButton = {
-                TextButton(onClick = {
-                    SoundFx.click()
-                    viewModel.forceAddHabit(pending.name, pending.icon, pending.xp, pending.time)
-                    pendingExpiredAdd = null
-                }) { Text("Add anyway", color = PinkDark, fontWeight = FontWeight.Black) }
-            },
-            dismissButton = {
-                TextButton(onClick = { SoundFx.click(); pendingExpiredAdd = null }) { Text("Cancel", color = SoftText, fontWeight = FontWeight.Bold) }
-            }
         )
     }
 }
@@ -217,8 +210,6 @@ private fun ProgressRing(pct: Int) {
     }
 }
 
-private data class PendingHabit(val name: String, val icon: String, val xp: Int, val time: String)
-
 @Composable
 private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Row(modifier.padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -229,10 +220,11 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HabitRowWithActions(habit: Habit, status: HabitStatus, index: Int, use24h: Boolean, onComplete: () -> Unit, onEdit: () -> Unit) {
+private fun HabitRowWithActions(habit: Habit, status: HabitStatus, index: Int, use24h: Boolean, startsTomorrow: Boolean, onComplete: () -> Unit, onEdit: () -> Unit) {
     HabitCard(
         habit = habit,
         status = status,
+        startsTomorrow = startsTomorrow,
         modifier = Modifier.padding(13.dp, 0.dp, 13.dp, 9.dp).enterFromBelow(index + 1),
         onEdit = onEdit,
         use24h = use24h,

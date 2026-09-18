@@ -1,5 +1,16 @@
 package com.vivichi.app.util
 
+/** True when a habit at [hhmm] has already closed for today (2.5h completion window). */
+fun habitWindowPassed(hhmm: String): Boolean {
+    val p = hhmm.split(":")
+    val mins = (p.getOrNull(0)?.toIntOrNull() ?: 0) * 60 + (p.getOrNull(1)?.toIntOrNull() ?: 0)
+    val now = java.time.LocalTime.now()
+    return now.hour * 60 + now.minute > mins + 150
+}
+
+/** Next full hour from now as "HH:mm" — a sensible default that's open today. */
+fun nextFullHour(): String = "%02d:00".format((java.time.LocalTime.now().hour + 1) % 24)
+
 /**
  * Habit times are always *stored* as 24-hour "HH:mm" (alarms and expiry maths rely on it);
  * this only changes how they're shown. 12-hour is the default: 00:30 → 12:30 AM, 13:00 → 1:00 PM.
