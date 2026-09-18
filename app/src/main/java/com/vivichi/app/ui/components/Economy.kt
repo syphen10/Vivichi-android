@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -78,7 +79,10 @@ fun PremiumButton(isPremium: Boolean, modifier: Modifier = Modifier, onClick: ()
     Row(
         modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.linearGradient(colors, start = androidx.compose.ui.geometry.Offset(0f + shift * 120f, 0f), end = androidx.compose.ui.geometry.Offset(260f + shift * 120f, 80f)))
+            // Shimmer is read in the draw phase only, so the button repaints without recomposing.
+            .drawBehind {
+                drawRect(Brush.linearGradient(colors, start = androidx.compose.ui.geometry.Offset(shift * 120f, 0f), end = androidx.compose.ui.geometry.Offset(260f + shift * 120f, 80f)))
+            }
             .clickable { SoundFx.click(); onClick() }
             .padding(start = 9.dp, end = 13.dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically

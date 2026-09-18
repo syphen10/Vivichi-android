@@ -74,10 +74,14 @@ object RewardedAds {
 
     private fun startSdk(context: Context) {
         if (!sdkStarted.compareAndSet(false, true)) return
-        MobileAds.initialize(context) {
-            _sdkReady.value = true
-            load(context)
-        }
+        // Google recommends initializing off the main thread; the completion callback still
+        // arrives on the main thread, where loading must start.
+        Thread {
+            MobileAds.initialize(context) {
+                _sdkReady.value = true
+                load(context)
+            }
+        }.start()
     }
 
     private fun load(context: Context) {

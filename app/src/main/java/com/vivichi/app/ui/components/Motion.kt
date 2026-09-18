@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
@@ -158,8 +159,18 @@ fun AnimatedBar(
     var target by remember { mutableStateOf(0f) }
     LaunchedEffect(progress) { target = progress.coerceIn(0f, 1f) }
     val fill by animateFloatAsState(target, tween(900, easing = FastOutSlowInEasing), label = "fill")
-    val sweepT = rememberInfiniteTransition(label = "shine")
-    val sweep by sweepT.animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2200, delayMillis = 600, easing = LinearEasing)), label = "sweep")
+    // The shine sweeps twice whenever the value changes, then rests. A forever-looping sweep kept
+    // every bar on screen redrawing 60 times a second, which added up across the HUD and screens.
+    val sweepAnim = remember { Animatable(-0.4f) }
+    LaunchedEffect(progress) {
+        if (!shine) return@LaunchedEffect
+        delay(400)
+        repeat(2) {
+            sweepAnim.snapTo(-0.4f)
+            sweepAnim.animateTo(1.4f, tween(1400, easing = LinearEasing))
+        }
+    }
+    val sweep = sweepAnim.value
     Box(
         modifier
             .fillMaxWidth()
@@ -301,6 +312,23 @@ fun FloatingSparkles(
     }
 }
 
+/**
+ * Same sparkle look as [FloatingSparkles] but frozen: for surfaces that are always on screen
+ * (the HUD), where a constant animation would keep the whole top of the app repainting.
+ */
+@Composable
+fun StaticSparkles(modifier: Modifier = Modifier, color: Color = Color.White, count: Int = 10, seed: Int = 7) {
+    val points = remember(seed, count) {
+        val r = Random(seed)
+        List(count) { floatArrayOf(r.nextFloat(), 0.1f + r.nextFloat() * 0.8f, 3f + r.nextFloat() * 5f, 0.35f + r.nextFloat() * 0.5f) }
+    }
+    Canvas(modifier.fillMaxSize()) {
+        points.forEach { (x, y, sz, a) ->
+            drawSparkle(Offset(x * size.width, y * size.height), sz.dp.toPx(), color.copy(alpha = color.alpha * a))
+        }
+    }
+}
+
 private fun edgeFade(y: Float): Float = when {
     y < 0.12f -> y / 0.12f
     y > 0.88f -> (1f - y) / 0.12f
@@ -309,18 +337,27 @@ private fun edgeFade(y: Float): Float = when {
 
 /** Four-point twinkle star. */
 fun DrawScope.drawSparkle(center: Offset, radius: Float, color: Color) {
-    val inner = radius * 0.28f
-    val path = Path().apply {
+    // One shared unit-size star, moved and scaled into place. Building a fresh Path per sparkle
+    // per frame (dozens of sparkles, 60fps, several cards) churned memory and pegged the CPU.
+    withTransform({
+        translate(center.x, center.y)
+        scale(radius, radius, Offset.Zero)
+    }) {
+        drawPath(UnitSparkle, color)
+    }
+}
+
+private val UnitSparkle: Path by lazy {
+    Path().apply {
         for (i in 0 until 8) {
-            val r = if (i % 2 == 0) radius else inner
+            val r = if (i % 2 == 0) 1f else 0.28f
             val a = (i * PI / 4 - PI / 2).toFloat()
-            val px = center.x + cos(a) * r
-            val py = center.y + sin(a) * r
+            val px = cos(a) * r
+            val py = sin(a) * r
             if (i == 0) moveTo(px, py) else lineTo(px, py)
         }
         close()
     }
-    drawPath(path, color)
 }
 
 /**

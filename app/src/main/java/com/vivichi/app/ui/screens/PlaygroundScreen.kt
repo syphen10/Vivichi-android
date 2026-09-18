@@ -74,7 +74,7 @@ fun PlaygroundScreen(viewModel: VivichiViewModel) {
     LaunchedEffect(bump) {
         if (bump > 0) {
             happy = true
-            delay(1500)
+            delay(2000)
             happy = false
         }
     }

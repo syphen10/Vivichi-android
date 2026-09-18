@@ -134,7 +134,7 @@ fun GameHud(state: AppState, onCoins: () -> Unit, onPremium: () -> Unit) {
             drawCircle(Color.White.copy(alpha = 0.08f), size.height * 0.9f, Offset(size.width * 0.92f, size.height * 0.05f))
             drawCircle(Color.White.copy(alpha = 0.06f), size.height * 0.55f, Offset(size.width * 0.05f, size.height * 1.05f))
         }
-        FloatingSparkles(Modifier.matchParentSize(), color = Color.White.copy(alpha = 0.7f), count = 9, seed = 42)
+        StaticSparkles(Modifier.matchParentSize(), color = Color.White.copy(alpha = 0.55f), count = 9, seed = 42)
 
         Column(
             Modifier

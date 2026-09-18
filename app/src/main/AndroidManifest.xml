@@ -25,6 +25,15 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}" />
+        <!-- Google's opt-in flags that move ad SDK initialization and ad-loading work off the
+             main thread. Without them, ANR traces showed the main thread busy inside the ads SDK
+             (parsing ad WebView messages), which froze taps on slower devices. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true" />
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
+            android:value="true" />
 
         <activity
             android:name=".MainActivity"

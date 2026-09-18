@@ -82,12 +82,18 @@ fun CharacterView(
                 },
             contentAlignment = Alignment.Center
         ) {
-            val happyRes = if (happy) happyPetRes(species) else null
-            androidx.compose.animation.Crossfade(targetState = happyRes, animationSpec = tween(140), label = "face") { res ->
-                if (res != null) {
-                    coil.compose.AsyncImage(model = res, contentDescription = null, modifier = Modifier.size(size * 0.6f))
-                } else {
-                    EmojiGlyph(raw = petEmoji(species), size = size * 0.6f)
+            // Both faces stay composed (and so decoded) the whole time; only their opacity swaps.
+            // Loading the happy SVG on demand made it flash in late, or not at all on slow phones.
+            val happyRes = happyPetRes(species)
+            val happyAlpha by animateFloatAsState(if (happy && happyRes != null) 1f else 0f, tween(140), label = "happy")
+            Box(contentAlignment = Alignment.Center) {
+                EmojiGlyph(raw = petEmoji(species), size = size * 0.6f, modifier = Modifier.graphicsLayer { this.alpha = 1f - happyAlpha })
+                if (happyRes != null) {
+                    coil.compose.AsyncImage(
+                        model = happyRes,
+                        contentDescription = null,
+                        modifier = Modifier.size(size * 0.6f).graphicsLayer { this.alpha = happyAlpha }
+                    )
                 }
             }
         }
