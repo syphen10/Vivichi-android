@@ -101,6 +101,11 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
                         },
                         label = "tab"
                     ) { current ->
+                        // Each tab gets a fresh "opened at" stamp, so its cards animate in once.
+                        val openedAt = remember(current) { android.os.SystemClock.uptimeMillis() }
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            com.vivichi.app.ui.components.LocalScreenOpenedAt provides openedAt
+                        ) {
                         when (current) {
                             Tab.HOME -> HomeScreen(viewModel, onNavigateHabits = { tab = Tab.HABITS })
                             Tab.HABITS -> HabitsScreen(viewModel)
@@ -114,6 +119,7 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
                                 onRestorePremium = store.onRestorePremium,
                                 onAdPrivacy = if (state.premium) null else store.onAdPrivacy
                             )
+                        }
                         }
                     }
                 }

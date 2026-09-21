@@ -103,15 +103,27 @@ fun Modifier.pressScale(pressed: Boolean, pressedScale: Float = 0.95f): Modifier
  * Fades and floats the element up into place, delayed by [index] for a staggered cascade.
  * Plays once per item — lazy lists don't replay it when an item scrolls back into view.
  */
+/**
+ * When the current screen appeared. Cards use it to tell "the screen just opened, make an
+ * entrance" from "I scrolled into view, just be there". Provided per tab in VivichiApp.
+ */
+val LocalScreenOpenedAt = androidx.compose.runtime.compositionLocalOf { 0L }
+
+/** How long after a screen opens its cards still animate in. */
+private const val ENTRY_WINDOW_MS = 900L
+
 fun Modifier.enterFromBelow(index: Int = 0, distance: Dp = 28.dp): Modifier = composed {
-    var played by rememberSaveable { mutableStateOf(false) }
-    val progress = remember { Animatable(if (played) 1f else 0f) }
+    // Only cards present when the screen opens make the entrance. Rows that appear later because
+    // you scrolled just show up: otherwise every flick spawns a fresh spring animation per row,
+    // which is what dropped scrolling to a crawl on slower phones.
+    val opened = LocalScreenOpenedAt.current
+    val animate = remember { android.os.SystemClock.uptimeMillis() - opened < ENTRY_WINDOW_MS }
+    if (!animate) return@composed Modifier
+
+    val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        if (!played) {
-            delay(index.coerceIn(0, 12) * 45L)
-            progress.animateTo(1f, spring(dampingRatio = 0.72f, stiffness = 260f))
-            played = true
-        }
+        delay(index.coerceIn(0, 12) * 45L)
+        progress.animateTo(1f, spring(dampingRatio = 0.72f, stiffness = 260f))
     }
     graphicsLayer {
         val p = progress.value
