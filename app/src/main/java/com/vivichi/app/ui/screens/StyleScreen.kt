@@ -314,17 +314,14 @@ private fun PriceChip(price: Int) {
 
 @Composable
 private fun LockBadge(modifier: Modifier, premium: Boolean = false) {
-    val infinite = rememberInfiniteTransition(label = "lock")
-    val wobble by infinite.animateFloat(
-        initialValue = -8f, targetValue = 8f,
-        animationSpec = infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "wobble"
-    )
+    val clock = com.vivichi.app.ui.components.LocalAmbientTime.current
     Box(
         modifier
             .padding(6.dp)
             .size(22.dp)
-            .graphicsLayer { rotationZ = wobble }
+            .graphicsLayer {
+                rotationZ = com.vivichi.app.ui.components.lerpF(-8f, 8f, com.vivichi.app.ui.components.pingPong(clock.value, 1600))
+            }
             .clip(RoundedCornerShape(8.dp))
             .background(if (premium) Brush.linearGradient(PremiumGradient) else Brush.linearGradient(listOf(Color.White, Color.White))),
         contentAlignment = Alignment.Center

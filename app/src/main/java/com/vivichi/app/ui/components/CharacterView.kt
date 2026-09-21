@@ -36,29 +36,8 @@ fun CharacterView(
     /** Show the closed-eyes "satisfied" face (Playground reactions). */
     happy: Boolean = false
 ) {
-    val infinite = rememberInfiniteTransition(label = "char")
-
-    val floatY by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = if (mood == Mood.HAPPY) -10f else 0f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "floatY"
-    )
-    val rotation by infinite.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
-        animationSpec = infiniteRepeatable(
-            tween(if (mood == Mood.SAD || mood == Mood.FRAIL) 220 else 900, easing = LinearEasing),
-            RepeatMode.Reverse
-        ),
-        label = "rotate"
-    )
-    val pulse by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = if (mood == Mood.NEUTRAL) 1.05f else 1f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse"
-    )
+    // Driven by the shared ambient clock (see Ambient.kt); only the motion this mood uses is computed.
+    val clock = LocalAmbientTime.current
 
     val alphaVal = when {
         health <= 0 -> 0.4f
@@ -74,10 +53,12 @@ fun CharacterView(
             modifier = Modifier
                 .size(size)
                 .graphicsLayer {
-                    translationY = if (useFloat) floatY else 0f
-                    rotationZ = if (useRotation) rotation else 0f
-                    scaleX = if (mood == Mood.NEUTRAL) pulse else 1f
-                    scaleY = if (mood == Mood.NEUTRAL) pulse else 1f
+                    val t = clock.value
+                    translationY = if (useFloat) lerpF(0f, -10f, pingPong(t, 1200)) else 0f
+                    rotationZ = if (useRotation) lerpF(-4f, 4f, pingPongLinear(t, 220)) else 0f
+                    val s = if (mood == Mood.NEUTRAL) lerpF(1f, 1.05f, pingPong(t, 1400)) else 1f
+                    scaleX = s
+                    scaleY = s
                     this.alpha = alphaVal
                 },
             contentAlignment = Alignment.Center
@@ -89,11 +70,7 @@ fun CharacterView(
             Box(contentAlignment = Alignment.Center) {
                 EmojiGlyph(raw = petEmoji(species), size = size * 0.6f, modifier = Modifier.graphicsLayer { this.alpha = 1f - happyAlpha })
                 if (happyRes != null) {
-                    coil.compose.AsyncImage(
-                        model = happyRes,
-                        contentDescription = null,
-                        modifier = Modifier.size(size * 0.6f).graphicsLayer { this.alpha = happyAlpha }
-                    )
+                    SvgIcon(happyRes, size * 0.6f, Modifier.graphicsLayer { this.alpha = happyAlpha })
                 }
             }
         }

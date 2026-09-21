@@ -1,11 +1,29 @@
 package com.vivichi.app.ui.components
 
+import android.content.Context
+import android.graphics.drawable.BitmapDrawable
+import android.util.LruCache
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import coil.compose.AsyncImage
+import androidx.core.graphics.drawable.toBitmap
+import coil.imageLoader
+import coil.request.ImageRequest
 import com.vivichi.app.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * A bundled Twemoji SVG (res/raw), rendered via Coil's SVG decoder. Used instead of raw Unicode
@@ -16,11 +34,56 @@ import com.vivichi.app.R
  */
 @Composable
 fun EmojiIcon(name: EmojiName, size: Dp, modifier: Modifier = Modifier) {
-    AsyncImage(
-        model = name.resId,
-        contentDescription = null,
-        modifier = modifier.size(size)
-    )
+    SvgIcon(name.resId, size, modifier)
+}
+
+/**
+ * Draws a bundled SVG at [size]. Each (SVG, pixel size) is rendered once, off the main thread,
+ * then kept as a ready bitmap: later appearances (a row scrolling back into view, switching
+ * tabs) draw it straight away instead of going through a full image-loader request per icon —
+ * which, with a dozen emoji per screen of rows, was a big part of scroll stutter on slower phones.
+ */
+@Composable
+fun SvgIcon(resId: Int, size: Dp, modifier: Modifier = Modifier) {
+    val px = with(LocalDensity.current) { size.roundToPx() }.coerceAtLeast(1)
+    val cached = SvgBitmapCache.get(resId, px)
+    if (cached != null) {
+        Image(cached, contentDescription = null, modifier = modifier.size(size))
+        return
+    }
+    val context = LocalContext.current
+    var loaded by remember(resId, px) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(resId, px) { loaded = SvgBitmapCache.load(context, resId, px) }
+    val bmp = loaded
+    if (bmp != null) Image(bmp, contentDescription = null, modifier = modifier.size(size))
+    else Spacer(modifier.size(size))
+}
+
+private object SvgBitmapCache {
+    // Sized in bytes. Emoji bitmaps are small (a 34dp icon is ~100x100 px, ~40 KB), so this holds
+    // every icon the app shows several times over while staying modest on a 3 GB phone.
+    private val cache = object : LruCache<Long, ImageBitmap>(12 * 1024 * 1024) {
+        override fun sizeOf(key: Long, value: ImageBitmap) = value.width * value.height * 4
+    }
+
+    private fun key(resId: Int, px: Int) = (resId.toLong() shl 20) or px.toLong()
+
+    fun get(resId: Int, px: Int): ImageBitmap? = cache.get(key(resId, px))
+
+    suspend fun load(context: Context, resId: Int, px: Int): ImageBitmap? {
+        get(resId, px)?.let { return it }
+        val request = ImageRequest.Builder(context)
+            .data(resId)
+            .size(px, px)
+            .allowHardware(true)
+            .build()
+        val drawable = context.imageLoader.execute(request).drawable ?: return null
+        val bitmap = withContext(Dispatchers.Default) {
+            (drawable as? BitmapDrawable)?.bitmap ?: drawable.toBitmap(px, px)
+        }.asImageBitmap()
+        cache.put(key(resId, px), bitmap)
+        return bitmap
+    }
 }
 
 /**

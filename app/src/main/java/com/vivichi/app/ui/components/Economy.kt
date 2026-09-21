@@ -73,14 +73,14 @@ fun CoinChip(coins: Int, modifier: Modifier = Modifier, onClick: (() -> Unit)? =
 /** Always-visible Premium entry point, with a slow shimmer so it catches the eye without nagging. */
 @Composable
 fun PremiumButton(isPremium: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val shimmer = rememberInfiniteTransition(label = "premium")
-    val shift by shimmer.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing), RepeatMode.Reverse), label = "shift")
+    val clock = LocalAmbientTime.current
     val colors = if (isPremium) listOf(Color(0xFFFFD27A), Color(0xFFFFB3C6)) else PremiumGradient
     Row(
         modifier
             .clip(RoundedCornerShape(20.dp))
             // Shimmer is read in the draw phase only, so the button repaints without recomposing.
             .drawBehind {
+                val shift = pingPongLinear(clock.value, 2600)
                 drawRect(Brush.linearGradient(colors, start = androidx.compose.ui.geometry.Offset(shift * 120f, 0f), end = androidx.compose.ui.geometry.Offset(260f + shift * 120f, 80f)))
             }
             .clickable { SoundFx.click(); onClick() }

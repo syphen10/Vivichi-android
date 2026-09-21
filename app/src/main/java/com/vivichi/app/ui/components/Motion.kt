@@ -136,23 +136,20 @@ fun Modifier.enterFromBelow(index: Int = 0, distance: Dp = 28.dp): Modifier = co
 
 /** Gentle endless bob, for mascots and icons that should feel alive. */
 fun Modifier.floating(amplitude: Dp = 6.dp, periodMs: Int = 1800): Modifier = composed {
-    val t = rememberInfiniteTransition(label = "float")
-    val y by t.animateFloat(-1f, 1f, infiniteRepeatable(tween(periodMs, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "y")
-    graphicsLayer { translationY = y * amplitude.toPx() }
+    val clock = LocalAmbientTime.current
+    graphicsLayer { translationY = lerpF(-1f, 1f, pingPong(clock.value, periodMs)) * amplitude.toPx() }
 }
 
 /** Endless soft pulse (scale), e.g. for urgent banners or a flame. */
 fun Modifier.pulsing(max: Float = 1.06f, periodMs: Int = 900): Modifier = composed {
-    val t = rememberInfiniteTransition(label = "pulse")
-    val s by t.animateFloat(1f, max, infiniteRepeatable(tween(periodMs, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "s")
-    graphicsLayer { scaleX = s; scaleY = s }
+    val clock = LocalAmbientTime.current
+    graphicsLayer { val s = lerpF(1f, max, pingPong(clock.value, periodMs)); scaleX = s; scaleY = s }
 }
 
 /** Endless little wiggle (rotation). */
 fun Modifier.wiggling(degrees: Float = 8f, periodMs: Int = 700): Modifier = composed {
-    val t = rememberInfiniteTransition(label = "wiggle")
-    val r by t.animateFloat(-degrees, degrees, infiniteRepeatable(tween(periodMs, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "r")
-    graphicsLayer { rotationZ = r }
+    val clock = LocalAmbientTime.current
+    graphicsLayer { rotationZ = lerpF(-degrees, degrees, pingPong(clock.value, periodMs)) }
 }
 
 /**
@@ -312,11 +309,11 @@ fun FloatingSparkles(
         val r = Random(seed)
         List(count) { floatArrayOf(r.nextFloat(), r.nextFloat(), 0.4f + r.nextFloat() * 0.8f, 3f + r.nextFloat() * 5f, r.nextFloat()) }
     }
-    val clock = rememberInfiniteTransition(label = "sparkles")
-    val t by clock.animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "t")
+    val clock = LocalAmbientTime.current
     // Own layer: the per-frame redraw stays inside this canvas instead of re-recording the
     // whole card or screen around it (the main source of scroll jank).
     Canvas(modifier.fillMaxSize().graphicsLayer()) {
+        val t = loopPhase(clock.value, 9000)
         seeds.forEach { (x0, y0, speed, sz, phase) ->
             val y = ((y0 - t * speed) % 1f + 1f) % 1f
             val x = x0 + sin((t * 2 * PI * speed + phase * 6).toFloat()) * 0.03f

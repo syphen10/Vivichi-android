@@ -68,7 +68,11 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
         onWatch = store.onWatchAd
     )
 
-    Box(Modifier.fillMaxSize().background(bgColor)) {
+    // Shared clock for all ambient motion; it pauses while anything scrolls (see Ambient.kt).
+    // No background here: AppBackdrop already paints the page colour, and filling the whole
+    // screen twice per frame is wasted work on budget GPUs.
+    com.vivichi.app.ui.components.ProvideAmbientMotion { ambientScroll ->
+    Box(Modifier.fillMaxSize().then(ambientScroll)) {
         com.vivichi.app.ui.components.AppBackdrop(bgColor)
         if (!state.onboarded) {
             OnboardingScreen(viewModel = viewModel)
@@ -224,6 +228,7 @@ fun VivichiApp(viewModel: VivichiViewModel, store: StoreHooks = StoreHooks()) {
                 }
             }
         }
+    }
     }
 }
 
