@@ -14,3 +14,6 @@ local.properties
 *.jks
 keystore.properties
 /keystore/
+
+# Local copies of signed release builds (kept in the private repo, never published here)
+/release-builds/
