@@ -1,6 +1,8 @@
 package com.vivichi.app.showcase
 
 import android.content.Intent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.vivichi.app.data.Achievements
 import com.vivichi.app.data.AppState
 import com.vivichi.app.data.DayLog
@@ -21,8 +23,13 @@ import java.time.LocalDate
  */
 object ShowcaseLoader {
 
+    /** True once the showcase profile is loaded: hides the test-ad banner so it isn't in the shots. */
+    var active: Boolean by androidx.compose.runtime.mutableStateOf(false)
+        private set
+
     fun maybeLoad(intent: Intent?, viewModel: VivichiViewModel) {
         if (intent?.getBooleanExtra("showcase", false) == true) {
+            active = true
             viewModel.replaceState(build())
         }
     }

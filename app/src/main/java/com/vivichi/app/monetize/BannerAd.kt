@@ -36,6 +36,8 @@ import com.vivichi.app.BuildConfig
  * until an ad has actually loaded, so a failed or slow load never leaves an empty grey strip.
  * The AdView refreshes itself on the interval set in AdMob; after a failed load we retry.
  */
+private const val FIRST_LOAD_DELAY_MS = 5_000L
+
 @Composable
 fun BottomBannerAd(modifier: Modifier = Modifier) {
     // Consent + SDK init happen in RewardedAds.start(); never request a banner before that.
@@ -62,7 +64,9 @@ fun BottomBannerAd(modifier: Modifier = Modifier) {
                     if (!loaded) handler.postDelayed({ loadAd(AdRequest.Builder().build()) }, 60_000L)
                 }
             }
-            loadAd(AdRequest.Builder().build())
+            // Let the app finish opening first: decoding the ad response runs on the main thread
+            // inside Google's SDK, and landing mid-startup made launch stutter on slow phones.
+            handler.postDelayed({ loadAd(AdRequest.Builder().build()) }, FIRST_LOAD_DELAY_MS)
         }
     }
 

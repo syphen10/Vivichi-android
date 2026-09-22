@@ -293,6 +293,14 @@ data class AdOffer(val adsLeft: Int, val ready: Boolean, val onWatch: () -> Unit
 
 @Composable
 fun WatchAdButton(ad: AdOffer, modifier: Modifier = Modifier) {
+    // The ad is fetched only while this button is on screen (see RewardedAds.offerShown).
+    if (ad.adsLeft > 0) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            com.vivichi.app.monetize.RewardedAds.offerShown(context)
+            onDispose { com.vivichi.app.monetize.RewardedAds.offerHidden() }
+        }
+    }
     val enabled = ad.adsLeft > 0 && ad.ready
     val label = when {
         ad.adsLeft <= 0 -> "Daily ad limit reached"

@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Rewarded ads only — nothing ever interrupts the user uninvited. One ad is kept preloaded so
- * the "watch for coins" button responds instantly.
+ * Rewarded ads only — nothing ever interrupts the user uninvited. An ad is fetched when a
+ * "watch for coins" button comes on screen, so it's usually ready by the time it's tapped.
  *
  * Consent comes first: Google's UMP form is shown to users in regions that require it
  * (EEA/UK/Switzerland) and the SDK isn't initialised until ads may be requested.
@@ -79,9 +79,28 @@ object RewardedAds {
         Thread {
             MobileAds.initialize(context) {
                 _sdkReady.value = true
-                load(context)
+                // No load here. The ads SDK decodes each ad response on the main thread, which
+                // froze budget phones for seconds at a time; a rewarded ad is only fetched once
+                // a "Watch ad" button is actually on screen (see [offerShown]).
+                if (visibleOffers > 0) load(context)
             }
         }.start()
+    }
+
+    /** How many "Watch ad" buttons are currently on screen. */
+    private var visibleOffers = 0
+
+    /** A "Watch ad" button appeared: fetch an ad now so it's ready by the time it's tapped. */
+    fun offerShown(context: Context) {
+        visibleOffers++
+        retriesLeft = MAX_RETRIES
+        load(context.applicationContext)
+    }
+
+    /** That button left the screen. Pending retries stop once nothing is asking for an ad. */
+    fun offerHidden() {
+        visibleOffers = (visibleOffers - 1).coerceAtLeast(0)
+        if (visibleOffers == 0) mainHandler.removeCallbacksAndMessages(null)
     }
 
     private fun load(context: Context) {
@@ -103,28 +122,25 @@ object RewardedAds {
                     rewarded = null
                     loading = false
                     _ready.value = false
-                    // No fill or no network: try again later with backoff, otherwise the button
-                    // would sit on "Loading ad…" until the app is restarted.
-                    val delay = retryDelayMs
-                    retryDelayMs = (retryDelayMs * 2).coerceAtMost(MAX_RETRY_MS)
-                    mainHandler.postDelayed({ load(context) }, delay)
+                    // No fill or no network: retry a couple of times with backoff, but only
+                    // while a "Watch ad" button is still showing. Endless background retries
+                    // meant endless main-thread ad work on slow phones.
+                    if (visibleOffers > 0 && retriesLeft > 0) {
+                        retriesLeft--
+                        val delay = retryDelayMs
+                        retryDelayMs = (retryDelayMs * 2).coerceAtMost(MAX_RETRY_MS)
+                        mainHandler.postDelayed({ load(context) }, delay)
+                    }
                 }
             }
         )
     }
 
-    /** Call when the user is likely to want an ad soon (e.g. app resumed); no-op if one is ready. */
-    fun preload(context: Context) {
-        if (rewarded == null && !loading && sdkStarted.get()) {
-            mainHandler.removeCallbacksAndMessages(null)
-            retryDelayMs = FIRST_RETRY_MS
-            load(context.applicationContext)
-        }
-    }
-
     private const val FIRST_RETRY_MS = 15_000L
-    private const val MAX_RETRY_MS = 120_000L
+    private const val MAX_RETRY_MS = 60_000L
+    private const val MAX_RETRIES = 2
     private var retryDelayMs = FIRST_RETRY_MS
+    private var retriesLeft = MAX_RETRIES
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     /**
@@ -156,6 +172,10 @@ object RewardedAds {
     private fun consumed(activity: Activity) {
         rewarded = null
         _ready.value = false
-        load(activity.applicationContext)
+        // Line up the next one only if a "Watch ad" button is still showing (e.g. the coins dialog).
+        if (visibleOffers > 0) {
+            retriesLeft = MAX_RETRIES
+            load(activity.applicationContext)
+        }
     }
 }
