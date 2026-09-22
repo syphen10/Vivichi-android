@@ -149,7 +149,7 @@ $black = New-Object System.Drawing.Text.PrivateFontCollection; $black.AddFontFil
 $xbold = New-Object System.Drawing.Text.PrivateFontCollection; $xbold.AddFontFile((Join-Path $FontDir "Nunito-ExtraBold.ttf"))
 function C([string]$hex) { [System.Drawing.ColorTranslator]::FromHtml($hex) }
 $none = New-Object System.Drawing.RectangleF(0, 0, 0, 0)
-$panel = New-Object System.Drawing.RectangleF(179, 830, 817, 252)
+$panel = New-Object System.Drawing.RectangleF(179, 830, 817, 336)
 
 $slides = @(
   @{ f="home.png";        o="01-home.png";     l1="Your buddy lives"; l2="on your habits";   s="Keep them happy, healthy and alive";     t="#FDF4E9"; b="#FFD6E4"; ga="#FFC486"; gb="#FF9EBB"; c=$none },
