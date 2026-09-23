@@ -3,7 +3,7 @@
 Running handover note: where the app is, what's blocked, and what to do next.
 Update this whenever something here stops being true.
 
-**Last updated:** 23 September 2026 · **Current version:** 1.4.6 (versionCode 16)
+**Last updated:** 23 September 2026 · **Current version:** 1.4.7 (versionCode 17)
 
 ---
 
@@ -11,8 +11,8 @@ Update this whenever something here stops being true.
 
 | | |
 |---|---|
-| Latest built version | **1.4.6 / versionCode 16**, signed with the release key |
-| Uploaded to Play | **No.** The newest build on Play is **1.4.2 (12)**, in closed testing. 1.4.3–1.4.6 exist only locally. |
+| Latest built version | **1.4.7 / versionCode 17**, signed with the release key |
+| Uploaded to Play | **No.** The live closed-testing release is **1.4.3 (13)** (21 Sept). 1.4.4–1.4.7 are local only; a draft holding vc16 sits in Play Console. |
 | Ads | Requesting correctly, but **Google serves almost nothing** — see [Ads are blocked](#ads-are-blocked-not-a-code-problem) |
 | Store screenshots | Regenerated from 1.4.5 — current UI, in `store-assets/screenshots/` |
 | Repos | Public + private both pushed and in sync |
@@ -29,10 +29,10 @@ C:\claude code\Vivichi-private-repo\release-builds\  (committed — the real bac
 `vivichi-<version>-vc<code>.aab` is the Play upload; the `.apk` beside it installs directly on a
 phone. Only the newest version is kept; older ones are in the private repo's git history.
 
-### To upload 1.4.6
+### To upload the latest build
 
 Play Console → Test and release → the track → Create new release → upload the `.aab`.
-Release name `1.4.6 (16)`. Notes:
+Release name `1.4.7 (17)`. Notes:
 
 ```
 <en-US>
