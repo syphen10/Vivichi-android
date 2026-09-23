@@ -54,9 +54,12 @@ account-level setup, and **no code change can fix it**:
    store. Vivichi is in *closed testing*, which has no public listing, so AdMob can't link it.
    **Vivichi has to be published publicly on Play** (production, or a public open-testing listing)
    before AdMob → Apps → Vivichi → *Add shop* can link it and the review can happen.
-2. **The AdMob account isn't verified.** AdMob → Payments → enter payment details (name, address,
-   tax). Google won't review the app until this is done. Independent of everything else — do it
-   first, it takes time.
+   Note: personal Play developer accounts created after Nov 2023 must run closed testing with 12+
+   testers for 14 continuous days before production access is granted — check Play Console →
+   Publishing overview. That gate, not the app, is what's holding ads up.
+2. ~~The AdMob account isn't verified.~~ **Done** — the payments profile (1257-9429-4872, Pakistan,
+   individual) shows *Verified on 13 Sept 2026*. Adding a bank account only matters for payouts,
+   not for the review.
 3. **No privacy message configured.** The app's own diagnostics reported:
    *"Publisher misconfiguration: no form(s) configured for the input app ID."*
    Fix in AdMob → Privacy & messaging: create and publish a GDPR message and a US states message
