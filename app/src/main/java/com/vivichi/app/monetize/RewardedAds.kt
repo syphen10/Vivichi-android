@@ -47,16 +47,30 @@ object RewardedAds {
             {
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { _ ->
                     updatePrivacyFlag(consent)
+                    note(consent)
                     if (consent.canRequestAds()) startSdk(activity.applicationContext)
                 }
             },
-            { _ ->
+            { error ->
                 // Offline or misconfigured: fall back to whatever consent was stored last time.
+                AdDiagnostics.consent = "lookup failed: ${error.message}"
+                AdDiagnostics.canRequestAds = consent.canRequestAds()
                 if (consent.canRequestAds()) startSdk(activity.applicationContext)
             }
         )
+        note(consent)
         // A previous session's consent is already valid — don't wait for the network round trip.
         if (consent.canRequestAds()) startSdk(activity.applicationContext)
+    }
+
+    private fun note(consent: ConsentInformation) {
+        AdDiagnostics.consent = when (consent.consentStatus) {
+            ConsentInformation.ConsentStatus.NOT_REQUIRED -> "not required here"
+            ConsentInformation.ConsentStatus.OBTAINED -> "obtained"
+            ConsentInformation.ConsentStatus.REQUIRED -> "required, not given yet"
+            else -> "unknown"
+        }
+        AdDiagnostics.canRequestAds = consent.canRequestAds()
     }
 
     private fun updatePrivacyFlag(consent: ConsentInformation) {
@@ -76,8 +90,13 @@ object RewardedAds {
         if (!sdkStarted.compareAndSet(false, true)) return
         // Google recommends initializing off the main thread; the completion callback still
         // arrives on the main thread, where loading must start.
+        AdDiagnostics.sdkStarted = true
         Thread {
-            MobileAds.initialize(context) {
+            MobileAds.initialize(context) { status ->
+                AdDiagnostics.sdkReady = true
+                AdDiagnostics.adapters = status.adapterStatusMap.entries.joinToString {
+                    "${it.key.substringAfterLast('.')}=${it.value.initializationState}"
+                }
                 _sdkReady.value = true
                 // No load here. The ads SDK decodes each ad response on the main thread, which
                 // froze budget phones for seconds at a time; a rewarded ad is only fetched once
@@ -106,6 +125,7 @@ object RewardedAds {
     private fun load(context: Context) {
         if (loading || rewarded != null || !sdkStarted.get()) return
         loading = true
+        AdDiagnostics.rewardedRequested++
         RewardedAd.load(
             context,
             BuildConfig.REWARDED_UNIT_ID,
@@ -116,12 +136,15 @@ object RewardedAds {
                     loading = false
                     retryDelayMs = FIRST_RETRY_MS
                     _ready.value = true
+                    AdDiagnostics.rewardedLoaded = true
+                    AdDiagnostics.rewardedError = null
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     rewarded = null
                     loading = false
                     _ready.value = false
+                    AdDiagnostics.rewardedError = AdDiagnostics.describe(error.code, error.message)
                     // No fill or no network: retry a couple of times with backoff, but only
                     // while a "Watch ad" button is still showing. Endless background retries
                     // meant endless main-thread ad work on slow phones.

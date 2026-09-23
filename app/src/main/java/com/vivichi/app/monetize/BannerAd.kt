@@ -57,16 +57,22 @@ fun BottomBannerAd(modifier: Modifier = Modifier) {
             adListener = object : AdListener() {
                 override fun onAdLoaded() {
                     loaded = true
+                    AdDiagnostics.bannerLoaded = true
+                    AdDiagnostics.bannerError = null
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
+                    AdDiagnostics.bannerError = AdDiagnostics.describe(error.code, error.message)
                     // Only the first load needs a manual retry; once shown, the SDK refreshes.
                     if (!loaded) handler.postDelayed({ loadAd(AdRequest.Builder().build()) }, 60_000L)
                 }
             }
             // Let the app finish opening first: decoding the ad response runs on the main thread
             // inside Google's SDK, and landing mid-startup made launch stutter on slow phones.
-            handler.postDelayed({ loadAd(AdRequest.Builder().build()) }, FIRST_LOAD_DELAY_MS)
+            handler.postDelayed({
+                AdDiagnostics.bannerRequested++
+                loadAd(AdRequest.Builder().build())
+            }, FIRST_LOAD_DELAY_MS)
         }
     }
 

@@ -15,6 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -57,6 +60,8 @@ fun SettingsScreen(
     val clipboard = LocalClipboardManager.current
     var showEditTimes by remember { mutableStateOf(false) }
     var showResetConfirm by remember { mutableStateOf(false) }
+    var adTapCount by remember { mutableIntStateOf(0) }
+    var showAdStatus by remember { mutableStateOf(false) }
     var donateStep by remember { mutableIntStateOf(DONATE_HIDDEN) }
 
     val scheduler = remember { ReminderScheduler(context) }
@@ -351,7 +356,16 @@ fun SettingsScreen(
             }
         }
 
-        item { SettingsLabel("Premium & Ads") }
+        item {
+            // Seven taps on this heading opens the ad diagnostics sheet. Hidden on purpose:
+            // it's for working out why ads aren't showing, not something users need to see.
+            Box(Modifier.clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { if (++adTapCount >= 7) { adTapCount = 0; showAdStatus = true } }) {
+                SettingsLabel("Premium & Ads")
+            }
+        }
         item {
             SettingsRow(
                 title = if (state.premium) "Vivichi Premium" else "Go Premium",
@@ -383,6 +397,33 @@ fun SettingsScreen(
             onSave = { times -> viewModel.saveHabitTimes(times); showEditTimes = false }
         )
     }
+    if (showAdStatus) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val report = com.vivichi.app.monetize.AdDiagnostics.summary()
+        AlertDialog(
+            onDismissRequest = { showAdStatus = false },
+            title = { Text("Ad status", fontWeight = FontWeight.Black) },
+            text = {
+                Text(
+                    report,
+                    fontSize = 11.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val cm = context.getSystemService(android.content.ClipboardManager::class.java)
+                    cm?.setPrimaryClip(android.content.ClipData.newPlainText("Vivichi ad status", report))
+                    android.widget.Toast.makeText(context, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+                }) { Text("Copy", color = PinkDark, fontWeight = FontWeight.Black) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAdStatus = false }) { Text("Close", color = SoftText, fontWeight = FontWeight.Bold) }
+            }
+        )
+    }
+
     if (showResetConfirm) {
         AlertDialog(
             onDismissRequest = { showResetConfirm = false },
