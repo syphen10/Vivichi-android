@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+. Same intent as backup_rules.xml: carry the save across a cloud backup and a
+  phone-to-phone transfer. Premium isn't trusted from here — it's re-checked against Google
+  Play on every launch — so restoring a save can't grant it.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="datastore/" />
+        <include domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="datastore/" />
+        <include domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

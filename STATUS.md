@@ -3,7 +3,7 @@
 Running handover note: where the app is, what's blocked, and what to do next.
 Update this whenever something here stops being true.
 
-**Last updated:** 23 September 2026 · **Current version:** 1.4.7 (versionCode 17)
+**Last updated:** 28 September 2026 · **Current version:** 1.4.8 (versionCode 18)
 
 ---
 
@@ -11,8 +11,8 @@ Update this whenever something here stops being true.
 
 | | |
 |---|---|
-| Latest built version | **1.4.7 / versionCode 17**, signed with the release key |
-| Uploaded to Play | **No.** The live closed-testing release is **1.4.3 (13)** (21 Sept). 1.4.4–1.4.7 are local only; a draft holding vc16 sits in Play Console. |
+| Latest built version | **1.4.8 / versionCode 18**, signed with the release key |
+| Uploaded to Play | **No.** The live closed-testing release is **1.4.3 (13)** (21 Sept). 1.4.4–1.4.8 are local only; a draft holding vc16 sits in Play Console. |
 | Ads | Requesting correctly, but **Google serves almost nothing** — see [Ads are blocked](#ads-are-blocked-not-a-code-problem) |
 | Store screenshots | Regenerated from 1.4.5 — current UI, in `store-assets/screenshots/` |
 | Repos | Public + private both pushed and in sync |
@@ -32,7 +32,7 @@ phone. Only the newest version is kept; older ones are in the private repo's git
 ### To upload the latest build
 
 Play Console → Test and release → the track → Create new release → upload the `.aab`.
-Release name `1.4.7 (17)`. Notes:
+Release name `1.4.8 (18)`. Notes:
 
 ```
 <en-US>
@@ -102,6 +102,27 @@ none of them removed any visual feature.
 **Not yet verified on the user's phone.** The emulator on the build PC cannot measure this: its
 freezes trace to `libEGL_emulation` (software graphics), and Android's own apps freeze on it too.
 Confirming these fixes needs the phone connected over USB, or the user's own judgement.
+
+---
+
+## Backups / data safety (1.4.8)
+
+The save is one DataStore file at `files/datastore/vivichi_state.preferences_pb`, but the backup
+rules only included `sharedpref` — so cloud backup and phone-to-phone transfer restored nothing and
+users lost their pet, streak and history on a new phone. Both rule files now include
+`domain="file" path="datastore/"`, and `android:dataExtractionRules` (Android 12+) was missing from
+the manifest entirely and has been added.
+
+Verified on the emulator: back up → `pm clear` → restore brings back the pet and habits.
+(Note when testing: `bmgr` silently skips **force-stopped** apps, so launch the app first, then
+`bmgr backupnow com.vivichi.app`, then `pm clear`, then `bmgr restore 1 com.vivichi.app`.)
+
+### Security posture, for the record
+
+No servers, no accounts, no network code of our own — only Google's ads and billing SDKs talk out.
+Nothing to breach, and no path between users. Remaining, accepted: a user can edit their own save
+(harmless), and Premium can be pirated on a rooted device since the entitlement is cached locally
+after Play's check. Proper defence needs server-side receipt validation; not worth it at this size.
 
 ---
 

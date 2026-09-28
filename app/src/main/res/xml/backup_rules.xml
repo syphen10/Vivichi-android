@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 and below. The whole save (pet, habits, streak, coins, history) is a single
+  DataStore Preferences file under files/datastore/, so that's what has to be backed up —
+  backing up sharedpref alone restored nothing, and a new phone meant starting from scratch
+  with a dead streak.
+-->
 <full-backup-content>
+    <include domain="file" path="datastore/" />
     <include domain="sharedpref" path="." />
 </full-backup-content>
