@@ -27,7 +27,7 @@ android {
         applicationId = "com.vivichi.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
+        versionCode = 19
         versionName = "1.4.8"
         vectorDrawables.useSupportLibrary = true
 

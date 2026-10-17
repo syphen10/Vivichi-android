@@ -3,7 +3,7 @@
 Running handover note: where the app is, what's blocked, and what to do next.
 Update this whenever something here stops being true.
 
-**Last updated:** 28 September 2026 · **Current version:** 1.4.8 (versionCode 18)
+**Last updated:** 18 October 2026 · **Current version:** 1.4.8 (versionCode 18 submitted; vc19 built spare)
 
 ---
 
@@ -11,8 +11,9 @@ Update this whenever something here stops being true.
 
 | | |
 |---|---|
-| Latest built version | **1.4.8 / versionCode 18**, signed with the release key |
-| Uploaded to Play | **No.** The live closed-testing release is **1.4.3 (13)** (21 Sept). 1.4.4–1.4.8 are local only; a draft holding vc16 sits in Play Console. |
+| Latest built version | **1.4.8 / versionCode 19**, signed with the release key. vc19 is byte-for-byte the same app as vc18 — only the version code differs, built because Play rejects a reused code. |
+| Uploaded to Play | **Yes — vc18 submitted to _open testing_ on 17 Oct, full rollout, in review.** Review for a first public listing typically takes up to 7 days. vc19 is an unused spare. |
+| Content rating | IARC rating generated 17 Oct. Global Rating ID `96e74018-6766-8f2f-84a0-3fac2be9cd1f`. Re-do the questionnaire if ads/IAP answers ever change. |
 | Ads | Requesting correctly, but **Google serves almost nothing** — see [Ads are blocked](#ads-are-blocked-not-a-code-problem) |
 | Store screenshots | Regenerated from 1.4.5 — current UI, in `store-assets/screenshots/` |
 | Repos | Public + private both pushed and in sync |
@@ -27,7 +28,11 @@ C:\claude code\Vivichi-private-repo\release-builds\  (committed — the real bac
 ```
 
 `vivichi-<version>-vc<code>.aab` is the Play upload; the `.apk` beside it installs directly on a
-phone. Only the newest version is kept; older ones are in the private repo's git history.
+phone. Normally only the newest version is kept, older ones living in the private repo's git
+history — but vc18 and vc19 are both present on purpose: vc18 is the artifact actually in review,
+vc19 the spare.
+
+Note: on this PC the working folders are under `F:\claude code\` rather than `C:\claude code\`.
 
 ### To upload the latest build
 
