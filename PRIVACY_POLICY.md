@@ -1,6 +1,6 @@
 # Privacy Policy for Vivichi
 
-**Last updated:** September 17, 2026
+**Last updated:** October 22, 2026
 
 Vivichi ("the app") is developed by Syphen. This privacy policy explains what information the app handles, what is shared with third parties, and the choices you have.
 
@@ -23,6 +23,8 @@ Ads are provided by **Google AdMob**. To serve and measure ads and to prevent fr
 - how you interact with the ads you watch
 
 This information is collected by Google, not by the developer, and is handled under [Google's Privacy Policy](https://policies.google.com/privacy). You can learn how Google uses information from apps that use its services at [policies.google.com/technologies/partner-sites](https://policies.google.com/technologies/partner-sites).
+
+Google may also share this information with its **ad technology partners**, which help select, deliver and measure the ads you see. The consent form shown in the app lists these partners in full — open **List of partners** inside it to see the current list — and Google describes how it manages them at [support.google.com/admob/answer/9012903](https://support.google.com/admob/answer/9012903). If you are in the European Economic Area, the UK or Switzerland, no partner may use your data for personalised advertising unless you consent, and you can withdraw or change that consent at any time under **More → Ad privacy choices**.
 
 **Your choices:**
 - If you are in the European Economic Area, the UK or Switzerland, Vivichi asks for your consent before ads may be personalised, using Google's consent form. You can change your choice at any time in the app under **More → Ad privacy choices**.
